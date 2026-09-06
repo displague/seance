@@ -1,0 +1,9 @@
+# gdformat owns layout. Guard clauses and data-driven UI are intentional.
+max-file-lines: 1000
+max-line-length: 100
+disable:
+  - max-line-length
+  - max-returns
+  - function-arguments-number
+  - max-public-methods
+  - class-definitions-order

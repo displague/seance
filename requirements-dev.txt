@@ -1,0 +1,4 @@
+# Offline asset and quality tools only. No Python game runtime.
+gdtoolkit==4.5.0
+requests>=2.32.0,<3
+python-dotenv>=1.0,<2
