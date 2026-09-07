@@ -72,7 +72,7 @@ const PEOPLE = {
 		"goals":
 		[
 			"Reveal the medicine report; appear cooperative.",
-			"Keep the account ledger out of public view.",
+			"Keep the ledger and final bank audit out of public view.",
 			"Persuade the circle to accuse Lenore."
 		],
 		"rumor": "Lenore's locket contains a letter that isn't from her husband."
@@ -98,12 +98,12 @@ const PEOPLE = {
 		"color": "9bcfc9",
 		"initial": "E",
 		"bio":
-		"A bitter taste. A familiar hand. The clock striking eleven. Death has left you with fragments, and very little time.",
+		"A bitter taste. A familiar hand. The clock striking eleven. Death has left you with fragments, and very little time. From the second sitting, ask a willing living guest to examine the final bank audit: you cannot carry it yourself.",
 		"secret":
 		"Iris is your daughter. You meant to tell her. Only the Medium can hear your voice, unless you invite another vessel.",
 		"goals":
 		[
-			"Reveal both the medicine report and the ledger.",
+			"Reveal the medicine report and financial proof (ledger or final bank audit).",
 			"Have Iris inherit the estate.",
 			"Be released before dawn."
 		],
@@ -112,6 +112,19 @@ const PEOPLE = {
 }
 
 const CLUES = {
+	"audit":
+	{
+		"name": "The Bank's Audit Copy",
+		"room": "Conservatory",
+		"pos": Vector3(13.8, 0.87, 2.4),
+		"kind": "document",
+		"reference": true,
+		"summary":
+		"An independent, non-removable bank copy. Entering it in the public record exposes its contents to everyone. It remains available even if the physician's ledger is lost.",
+		"text":
+		"BANK AUDIT — certified duplicate.\n\nCharity transfers authorized by Dr. S. Blackwell were diverted to his personal account for eight years. Edmund requested this independent reconciliation on Thursday morning.\n\nHis attached instruction: ‘If my own accounts disappear, preserve the bank's copy. Silas must answer for the missing money.’\n\nThis public reference cannot be carried away, concealed or destroyed.",
+		"tag": "FINAL AUDIT"
+	},
 	"will":
 	{
 		"name": "The Last Testament",
@@ -226,7 +239,7 @@ const ITEMS = {
 		"room": "Memorial Chapel",
 		"pos": Vector3(0.0, 1.05, -13.4),
 		"description":
-		"A little brass key, engraved with the initial I. Some doors were locked to keep a secret in.",
+		"A little brass key, engraved with the initial I. An inheritance keepsake: Iris wants to retain it. The nursery is outside the playable wing in this case; this key does not unlock a room.",
 		"cursed": false
 	}
 }

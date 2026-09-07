@@ -1,5 +1,12 @@
 # Reviewed prototype decisions
 
+- 2026-09-07: Chapter unlocks and independent audit publication are authoritative;
+  future prerequisites are disclosed from arrival. NPC ownership disclosure is
+  listener-specific, and queued solo errands require actual physical arrival.
+  Source: chapter code review and follow-up; ADR 0001 proposed addendum.
+- 2026-09-07: Modal back/tab/scroll behavior belongs in presentation; reserving
+  controller bumpers must not suppress keyboard push-to-talk or leak a held press
+  across the journal boundary. Source: reviewed controller regression fixes.
 - 2026-09-06: Local dialogue may propose only currently permitted native actions;
   private knowledge and explicit transfer consent remain authoritative. Native
   speech is optional and listening permission remains valid only while it holds.

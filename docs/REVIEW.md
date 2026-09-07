@@ -1,4 +1,55 @@
-# Pre-commit review — solo, presentation and independent playtests
+# Pre-commit review — 2026-09-07 chapters and navigation
+
+The mandatory `code-review` skill was used before this checkpoint. No standalone
+`/code-review` command tool was exposed; the available Claude CLI performed a
+read-only review using the skill's checklist, AGENTS instructions and proposed ADR.
+It had Read/Glob/Grep access only: no edits, test execution, shell/git diff, asset
+API calls or delegated agents. Main-worker execution is recorded in
+[validation](VALIDATION.md), not inferred from code inspection.
+
+The first review reported **0 critical, 2 high, 7 medium and 6 low** findings.
+Both high findings were fixed before the final gate:
+
+- Journal navigation was suppressing keyboard push-to-talk as well as LB. The
+  reservation now preserves physical V, while held LB cannot begin transmitting
+  on journal close. Input latch cleanup no longer depends on enabled voice capture.
+- Per-frame integer scrolling could stall at high refresh rates. Fractional pixels
+  now accumulate; native tests compare equal-duration 60/1,000-FPS scroll input.
+
+Five medium findings were fixed: the capture tour now uses an unsealed clue;
+scroll panes are cached instead of scanned every idle frame; stick noise no longer
+steals focus; the physician has an explicit broader concealment list; and skipping
+an unknown reliquary clears its stale route. The physician may still disclose the
+medicine in pursuit of his cooperative public goal; this is intentional, not an
+assertion that NPCs never reveal self-incriminating facts.
+
+Two medium performance observations remain scoped follow-ups: static chapter prose
+is repeated in self-contained snapshots, and the existing developer MCP probe/route
+search can be costly. No production bandwidth or autonomous-agent latency claim is
+made. The developer bridge remains disabled by default and loopback-only.
+
+Low-priority dispositions: Back-to-journal is the user's requested behavior, and
+the public input-device helper replaces calling `_input` directly. Existing
+dictionary-array mutation and sticky result handling remain. The neighboring audit
+and letter props passed actual physics-ray selection tests; that does not replace
+production art/usability review.
+
+A separate targeted follow-up confirmed **no remaining high/critical findings** in
+the changed controller paths and newly added audit errand. It checked listening
+permissions, human-seat exclusion, physician refusal, chapter timing and physical
+publication. Its two remaining nits are a sub-pixel remainder when changing scroll
+panes and clearing a queued audit request after the collect attempt regardless of
+its return; chapter/phase/room/distance eligibility is checked before that attempt.
+Both are follow-ups, not hidden fixes claimed by the tests.
+
+Local derived receipts: `artifacts/review-chapters-20260907.json` and
+`artifacts/review-chapters-followup-20260907.json`. Full CLI responses remain in the
+task tool transcript; these are code-review notes, not frozen gameplay ratings.
+The ADR addendum records staged authoritative content, listener-specific ownership,
+UI-only modal routing, physical guests in both solo modes and queued errands.
+[ADR 0001](adr/0001-native-prototype.md) remains **proposed**, not user-accepted.
+
+## Earlier review — solo, presentation and independent playtests
 
 The mandatory `code-review` skill was used for the second development checkpoint.
 No standalone `/code-review` command tool was exposed in this session; two independent

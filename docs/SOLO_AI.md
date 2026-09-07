@@ -18,8 +18,10 @@ The Medium is a convenient first role. The Ghost can converse only through legal
 listening channels: the Medium at a sitting, or a possessed vessel. NPC interaction
 never impersonates a seat controlled by a human.
 
-For the reliquary, inspect the nursery register to its left in the Memorial Chapel.
-If Iris has already collected it, ask her to reveal it. Collected documents now stay
+The dossier and Estate Guide show all three chapter openings. The register unseals
+in investigation 2; the reliquary unseals in investigation 3. Inspect the register to
+the reliquary's left in the Memorial Chapel. If Iris collected it, ask for puzzle
+help or what she has found before requesting a disclosure. Collected documents stay
 open with their full text; the puzzle can also link back to your recovered register.
 A wrong answer leaves the puzzle panel open.
 
@@ -51,9 +53,14 @@ is used. Offline text play does not require these files.
 ## What changes the game
 
 - Guests have six separate authored identities, histories, manners and motives.
-- In AI solo, living NPCs walk to objects they value and collect them through the
+- In both solo modes, living NPCs walk to objects they value and collect them through the
   same rules as a player. The physician competes for his ledger; the heir seeks
-  the signet and testament. The policy runs during investigation, not while reading.
+  the signet and testament. New chapters reset their goal pass and unseal new
+  opportunities; patrol/reconsideration continues after the initial plan is complete.
+  The policy runs during investigation, not during séances or while reading a solo panel.
+- Ask what a guest has found before asking for a specific privately held clue.
+  Inheritance claims are already public. Ask about this investigation for their
+  current priorities; later chapters introduce lineage and financial pressures.
 - Showing evidence teaches that NPC privately. Relevant evidence can change their
   final accusation; some combinations also persuade a guest to reveal a held clue.
 - NPCs can refuse a requested goal object, give an unwanted object, or propose an
@@ -61,6 +68,11 @@ is used. Offline text play does not require these files.
   and rechecks both owners before transferring anything.
 - Lenore can be asked to give the locket to Iris. An eligible beneficiary holding
   Blackwell's ledger can surrender it in exchange for his heir-vote pledge.
+- From the second investigation/sitting, ask a willing guest to examine and publish
+  the final audit. It is a real queued errand, not instant testimony: they must reach
+  the Conservatory during investigation three. The Ghost can ask through the Medium
+  at sitting two or a possessed vessel during investigation three. Blackwell will
+  not agree to expose his own audit, and no errand is offered after investigation ends.
 - Repeating flattering lines does not farm trust or points. General AI conversation
   supplies character expression; only validated actions change game state.
 

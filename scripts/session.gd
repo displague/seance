@@ -66,7 +66,9 @@ func solo(role: String, use_ai: bool = false) -> void:
 	local_role = role if CaseData.ROLES.has(role) else "medium"
 	rules = GameRules.new()
 	rules.reset([local_role])
-	rules.state.interactive_guests = use_ai
+	# Physical motives and chapter behavior are native in every solo mode.
+	# The model opt-in controls free dialogue only, not whether guests can act.
+	rules.state.interactive_guests = true
 	_set_appearances()
 	active = true
 	hosting = true

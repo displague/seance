@@ -71,10 +71,12 @@ func run() -> void:
 	# Live tool selection must do more than route a puzzle hint.
 	session.solo("medium", true)
 	session.suspended = true
+	session.rules.state.round = 2
 	session.rules.state.positions.heir = CaseData.CLUES.will.pos
 	session.rules.act("heir", "collect", {"id": "will"})
 	session.rules.state.positions.medium = CaseData.ITEMS.ring.pos
 	session.command("collect", {"id": "ring"})
+	session.command("interact", {"target": "heir", "choice": "topic:possessions"})
 	(
 		ai
 		. ask(

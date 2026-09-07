@@ -65,6 +65,7 @@ const PROFILES = {
 		"desire": "Appear cooperative about the medicine, conceal his accounts, accuse Lenore.",
 		"item": "",
 		"clue": "ledger",
+		"conceals": ["ledger", "clock", "flowers"],
 		"death":
 		"Edmund's heart was failing. His wife's affairs certainly did not help. Have you read her letter?",
 		"inheritance":
@@ -149,7 +150,7 @@ const RESPONSES = {
 
 const HINTS = {
 	"safe":
-	"The inscription asks when Edmund first became a father. In the Memorial Chapel, read the nursery register on the left of the reliquary. If Iris has it, ask her to reveal it. The firstborn entry supplies the year.",
+	"The inscription asks when Edmund first became a father. The nursery register was kept in the Memorial Chapel, on the left of the reliquary. Read its firstborn entry for the year.",
 	"radio":
 	"The tuning card on the library radio gives the frequency. Move the dial in tenths, then hold that frequency.",
 	"candles":

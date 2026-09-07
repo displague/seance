@@ -69,9 +69,13 @@ func stop() -> void:
 
 
 func _process(_delta: float) -> void:
+	# Clear the navigation latch on release even when PTT is up or mic is off.
+	var talk_allowed = Controls.talk_allowed()
 	if not enabled:
 		return
-	transmitting = Input.is_action_pressed("game_talk") and Session.online and Session.active
+	transmitting = (
+		Input.is_action_pressed("game_talk") and Session.online and Session.active and talk_allowed
+	)
 	var focused = get_viewport().gui_get_focus_owner()
 	if focused is LineEdit or focused is TextEdit or not get_window().has_focus():
 		transmitting = false

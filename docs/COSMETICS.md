@@ -17,8 +17,10 @@ real-money pricing, subscription, loot box or premium entitlement has been imple
 - Six distinct free Ashwood base models, one per role.
 - Two additional free Heritage models: Medium and Physician (the original rigs).
 - A free silver brooch for each role. The gold brooch is an earned cosmetic.
-- Local Remembrance: 20 per completed sitting plus 2 per score point, capped at
-  50 per sitting. The gold brooch unlock costs 60 and applies to all roles.
+- Local Remembrance: 20 per completed case plus 2 per score point, capped at
+  50 per case (not once per investigation/séance phase). The gold brooch unlock
+  costs 60 and applies to all roles. Finishing now displays an earned-amount toast
+  and the results screen points to the wardrobe. Winning is not required to progress.
 - Per-role outfit and brooch preferences, stored in `user://wardrobe.cfg`.
   Saving preferences does not save an unfinished case.
 - The host selects the assigned role's preference, not merely the requested role's
@@ -54,3 +56,5 @@ The Meshy source prompts request rig-friendly separated limbs, but not every out
 obeyed: the widow has a trailing gown, and several idle hand poses need refinement.
 These assets need an art/rigging pass before selling any outfit. They are not a
 claim that paid skin inventory or production-quality character animation is ready.
+The next pass should use neutral paper-doll bases with separated limbs and modular
+wardrobe/accessories; see [generation constraints](ASSETS.md#next-character-generation-pass-modular-rigging-requirements).

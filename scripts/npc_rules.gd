@@ -5,7 +5,69 @@ extends RefCounted
 
 
 static func initial() -> Dictionary:
-	return {"heard": {}, "shown": {}, "offers": {}, "conversations": {}, "pledges": {}}
+	return {
+		"heard": {},
+		"shown": {},
+		"offers": {},
+		"conversations": {},
+		"pledges": {},
+		"audit_requests": [],
+		"disclosed_ownership": {}
+	}
+
+
+static func disclose_ownership(game, listener: String, npc: String, id: String) -> void:
+	var key = listener + ":" + npc
+	var disclosed: Array = game.state.npc.disclosed_ownership.get(key, [])
+	if not disclosed.has(id):
+		disclosed.append(id)
+	game.state.npc.disclosed_ownership[key] = disclosed
+
+
+static func ownership_known(game, listener: String, npc: String, id: String) -> bool:
+	# Inheritance claims and revealed evidence have a public register. Private
+	# holdings require an actual statement to this listener, not a menu oracle.
+	if game.state.items.has(id) or game.public_clue(id):
+		return owns(game, npc, id)
+	return game.state.npc.disclosed_ownership.get(listener + ":" + npc, []).has(id)
+
+
+static func willing_to_offer(npc: String, id: String) -> bool:
+	return not NpcData.PROFILES[npc].get("conceals", []).has(id)
+
+
+static func inventory_statement(game, listener: String, npc: String) -> void:
+	var names = []
+	for id in CaseData.CLUES.keys() + CaseData.ITEMS.keys():
+		if not owns(game, npc, id) or not willing_to_offer(npc, id):
+			continue
+		disclose_ownership(game, listener, npc, id)
+		names.append(CaseData.object_data(id).name)
+	var text = "I have nothing I am willing to offer just now."
+	if not names.is_empty():
+		text = (
+			"I have "
+			+ ", ".join(names)
+			+ ". You may ask about them, but I may choose to keep them."
+		)
+	record(game, listener, npc, text)
+
+
+static func give_hint(game, listener: String, npc: String, id: String) -> void:
+	var text: String = NpcData.HINTS[id]
+	if id == "safe":
+		if owns(game, npc, "birth"):
+			disclose_ownership(game, listener, npc, "birth")
+			text += " I have the register. Ask me to reveal it, and you can examine the entry."
+		elif game.public_clue("birth"):
+			text += " The register has been shared with the circle; it is in your journal."
+		elif owns(game, listener, "birth"):
+			text += " You already have the register in your keeping."
+		else:
+			text += " If it has been moved, ask the other guests what they have found."
+	if CaseProgression.locked(game.state, id):
+		text += " " + CaseProgression.lock_message(id) + "."
+	record(game, listener, npc, text)
 
 
 static func permission(game, listener: String, npc: String) -> String:
@@ -50,6 +112,26 @@ static func options(game, listener: String, npc: String) -> Array:
 	if permission(game, listener, npc) != "":
 		return []
 	var result = []
+	if (
+		game.state.interactive_guests
+		and game.state.round >= 2
+		and game.state.phase in ["investigation", "seance"]
+		and not (game.state.round == 3 and game.state.phase == "seance")
+		and npc not in ["doctor", "ghost"]
+		and not game.public_clue("audit")
+	):
+		result.append(
+			{
+				"id": "investigate:audit",
+				"label": "Ask them to examine and publish the final audit when available"
+			}
+		)
+	result.append(
+		{"id": "topic:possessions", "label": "Ask what they have found or are willing to offer"}
+	)
+	result.append(
+		{"id": "topic:chapter", "label": "Ask what they want to do in this investigation"}
+	)
 	for topic in ["history", "death", "inheritance", "ritual"]:
 		result.append(
 			{
@@ -65,7 +147,7 @@ static func options(game, listener: String, npc: String) -> Array:
 	for id in CaseData.CLUES:
 		if knows(game, listener, id):
 			result.append({"id": "show:" + id, "label": "Discuss: " + CaseData.CLUES[id].name})
-		if owns(game, npc, id) and npc != "doctor":
+		if ownership_known(game, listener, npc, id) and willing_to_offer(npc, id):
 			if not game.public_clue(id):
 				result.append(
 					{
@@ -80,7 +162,13 @@ static func options(game, listener: String, npc: String) -> Array:
 		if owns(game, listener, id) and npc != "ghost":
 			result.append({"id": "gift:" + id, "label": "Give: " + CaseData.ITEMS[id].name})
 	if npc == "widow" and owns(game, npc, "locket"):
-		result.append({"id": "deliver:locket", "label": "Ask Lenore to give the locket to Iris"})
+		result.append(
+			{
+				"id": "deliver:locket",
+				"label":
+				"Ask Lenore to give the locket to " + ("you" if listener == "keeper" else "Iris")
+			}
+		)
 	var key = listener + ":" + npc
 	if game.state.npc.offers.has(key):
 		var offer: Dictionary = game.state.npc.offers[key]
@@ -108,14 +196,16 @@ static func options(game, listener: String, npc: String) -> Array:
 
 
 static func _option_priority(choice: String) -> int:
+	if choice == "topic:possessions":
+		return 1
 	match choice.get_slice(":", 0):
 		"accept":
 			return 0
 		"reveal", "deliver", "request", "deal":
-			return 1
-		"show", "gift":
 			return 2
-	return 3
+		"show", "gift":
+			return 3
+	return 4
 
 
 static func available(game, listener: String, npc: String, choice: String) -> bool:
@@ -135,11 +225,36 @@ static func interact(game, listener: String, npc: String, choice: String) -> Str
 	var id = choice.get_slice(":", 1)
 	var profile: Dictionary = NpcData.PROFILES[npc]
 	match kind:
+		"investigate":
+			if not game.state.npc.audit_requests.has(npc):
+				game.state.npc.audit_requests.append(npc)
+				game.state.npc_routes.erase(npc)
+			record(
+				game,
+				listener,
+				npc,
+				"I will examine the bank's copy during the final investigation and put it in the public record. Give me time to reach the Conservatory once the circle breaks."
+			)
 		"topic":
+			if id == "chapter":
+				record(
+					game,
+					listener,
+					npc,
+					(
+						NpcDirector.stage_intent(game, npc)
+						if npc != "ghost"
+						else CaseProgression.view_for(game.state).focus
+					)
+				)
+				return ""
+			if id == "possessions":
+				inventory_statement(game, listener, npc)
+				return ""
 			record(game, listener, npc, profile[id])
 			game.state.discussed[listener + ":" + npc + ":" + id] = true
 		"hint":
-			record(game, listener, npc, NpcData.HINTS[id])
+			give_hint(game, listener, npc, id)
 		"show":
 			var shown: Array = game.state.npc.shown.get(npc, [])
 			if not shown.has(id):
@@ -151,8 +266,12 @@ static func interact(game, listener: String, npc: String, choice: String) -> Str
 				game,
 				listener,
 				npc,
-				replies.get(
-					npc, "I have read it. I will take that into account when the circle decides."
+				(
+					replies
+					. get(
+						npc,
+						"That is worth considering. I will take it into account when the circle decides."
+					)
 				)
 			)
 			# Evidence changes decisions. Flattery and repeat clicks do not farm trust.
@@ -193,7 +312,11 @@ static func interact(game, listener: String, npc: String, choice: String) -> Str
 				game,
 				listener,
 				npc,
-				"Iris should have it. I have given her the locket; there is nothing left for me inside it."
+				(
+					"You should have it. I have given you the locket; there is nothing left for me inside it."
+					if listener == "keeper"
+					else "Iris should have it. I have given her the locket; there is nothing left for me inside it."
+				)
 			)
 		"deal":
 			if listener == "ghost" or listener == "medium":
@@ -212,6 +335,11 @@ static func interact(game, listener: String, npc: String, choice: String) -> Str
 
 
 static func request_object(game, listener: String, npc: String, id: String) -> String:
+	if not owns(game, npc, id):
+		var key = listener + ":" + npc
+		game.state.npc.disclosed_ownership.get(key, []).erase(id)
+		record(game, listener, npc, "I no longer have the " + CaseData.object_data(id).name + ".")
+		return ""
 	if listener == "ghost":
 		record(
 			game, listener, npc, "You cannot carry it. Tell me which living guest should have it."
@@ -299,7 +427,10 @@ static func context(game, listener: String, npc: String) -> Dictionary:
 	var choices = []
 	for option in options(game, listener, npc):
 		# A model cannot spend the player's property or consent to an offer.
-		if option.id.get_slice(":", 0) in ["topic", "hint", "request", "reveal", "deliver"]:
+		if (
+			option.id.get_slice(":", 0)
+			in ["topic", "hint", "request", "reveal", "deliver", "investigate"]
+		):
 			choices.append(option)
 	return {
 		"name": CaseData.person(npc).name,
@@ -309,6 +440,14 @@ static func context(game, listener: String, npc: String) -> Dictionary:
 		"motivation": profile.desire,
 		"ready_testimony":
 		{
+			"topic:chapter":
+			(
+				NpcDirector.stage_intent(game, npc)
+				if npc != "ghost"
+				else CaseProgression.view_for(game.state).focus
+			),
+			"topic:possessions":
+			"I may name things I am willing to discuss or offer; this does not reveal their contents or promise a transfer.",
 			"topic:history": profile.history,
 			"topic:death": profile.death,
 			"topic:inheritance": profile.inheritance,
@@ -319,6 +458,7 @@ static func context(game, listener: String, npc: String) -> Dictionary:
 		},
 		"phase": game.state.phase,
 		"round": game.state.round,
+		"chapter": CaseProgression.view_for(game.state),
 		"conversation": game.state.npc.conversations.get(listener + ":" + npc, []).slice(-12),
 		"facts": facts,
 		"options": choices

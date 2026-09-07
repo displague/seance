@@ -142,6 +142,21 @@ Brooch geometry, spirit illumination and the animated weeping-wall shader are
 original code-native assets. They do not use external image assets. Blood versus
 slime changes presentation only, and reduced flashes suppress the lightning pulse.
 
+## Next character-generation pass: modular rigging requirements
+
+The user requests paper-doll-style bases for subsequent Meshy/local-rigging work:
+neutral A/T pose, arms separated from the torso, visible separated legs, fitted
+undergarments/base costume, no floor-length draping wardrobe, trailing skirt, cape,
+or accessory that fuses limbs. Inspect the actual generated geometry before rigging;
+an appropriate prompt alone is not proof of separable limbs or good deformation.
+
+Treat coats, skirts, hair pieces and accessories as separate fitted assets on a
+stable skeleton; validate shoulders, hips, seated poses and included locomotion clips
+before catalog integration. The user reports successful local rigging in Sunrise;
+reuse that read-only workflow where appropriate rather than assuming a paid rig is
+necessary. Do not replace current assets or spend credits until a new art pass is
+actually commissioned. This feedback pass generated no new models or paid tasks.
+
 ## Engine notices
 
 `tools/build.ps1` generates `build/GODOT-NOTICES.txt` directly from the bundled

@@ -105,6 +105,16 @@ func run() -> void:
 		inspected.ok and inspected.object.has("summary") and not inspected.object.has("text"),
 		"uncollected clue has preview only"
 	)
+	expect(inspected.object.actions.is_empty(), "sealed will offers no collection")
+	expect(
+		not call_as("heir", "act", {"action": "collect", "payload": {"id": "will"}}).ok,
+		"MCP cannot bypass chapter gate"
+	)
+	# Advance the real phase state, then return physically to the object.
+	game.advance()
+	game.advance()
+	call_as("heir", "walk", {"destination": "Library"})
+	call_as("heir", "walk", {"destination": "will"})
 	expect(
 		(
 			call_as(
@@ -264,6 +274,7 @@ func _affordance_fidelity() -> void:
 		"sealed ballot cannot be advertised again"
 	)
 	game.reset(CaseData.ROLES)
+	game.state.round = 3  # Exercise all unsealed-object variants, not just chapter one.
 	game.state.positions.medium = Vector3(-12, 0, -1.5)
 	_exercise_examples("medium", "nearby library objects")
 	game.state.evidence.will.holder = "medium"
@@ -427,6 +438,9 @@ func _navigation_and_puzzle() -> void:
 	year.compile("born [0-9]+ [A-Za-z]+ ([0-9]{4})")
 	var found = year.search(birth)
 	expect(found != null, "player can derive year from inspected record")
+	game.advance()
+	game.advance()
+	call_as("heir", "walk", {"destination": "Memorial Chapel"})
 	expect(call_as("heir", "walk", {"destination": "safe"}).ok, "approach reliquary")
 	var safe = call_as("heir", "inspect", {"id": "safe"})
 	expect(

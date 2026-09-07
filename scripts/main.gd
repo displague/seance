@@ -84,7 +84,8 @@ func _sync() -> void:
 	if not Session.active:
 		return
 	var view = Session.view
-	Wardrobe.award(view, Session.local_role)
+	if Wardrobe.award(view, Session.local_role):
+		ui.toast("+%d REMEMBRANCE · Choose earned cosmetics in the wardrobe." % Wardrobe.last_award)
 	manor.sync(view)
 	characters.sync(view)
 	if view.phase != last_phase:
@@ -146,9 +147,9 @@ func _capture_run(delta: float) -> void:
 			ui.journal.inspect("will", true)
 		6:
 			ui.close()
-			Session.rules.state.positions.medium = CaseData.CLUES.will.pos
-			Session.command("collect", {"id": "will"})
-			ui.journal.inspect("will")
+			Session.rules.state.positions.medium = CaseData.CLUES.clock.pos
+			Session.command("collect", {"id": "clock"})
+			ui.journal.inspect("clock")
 		7:
 			ui.close()
 			Session.advance()

@@ -184,11 +184,17 @@ func summary() -> void:
 		awards_label.max_lines_visible = 1
 		awards_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		content.add_child(awards_label)
-	body.add_child(
-		UIK.label(
-			"No new game starts automatically. Results remain until you choose to leave.",
-			14,
-			UIK.GOLD
+	(
+		body
+		. add_child(
+			(
+				UIK
+				. label(
+					"No new game starts automatically. Case completion earns Remembrance for wardrobe cosmetics.",
+					14,
+					UIK.GOLD
+				)
+			)
 		)
 	)
 	body.add_child(UIK.button("LEAVE ASHWOOD     →", ui.show_menu, true))

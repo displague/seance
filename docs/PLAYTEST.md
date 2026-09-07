@@ -5,7 +5,20 @@ requested independent first-impression trial. The latter now has a separate nati
 [local-model and MCP workflow](AGENT_PLAYTEST.md) with isolated actor histories,
 one rules-reader, viewer boundaries, repeat games and five per-person ratings.
 
-## Exercise completed — 2026-09-06
+## Chapter-aware exercise — 2026-09-07
+
+The chapter-aware follow-up passed **91 assertions** again on the final candidate
+across six real ENet processes:
+Medium 25, heir 14, widow 15, physician 13, housekeeper 14, Ghost 10. Players now
+wait for actual chapter openings before recovering the will/register/ledger and
+preparing the radio. The Medium publishes the fixed final audit while the physician
+destroys the original ledger. All six clients agree on scores and ending: Medium 12,
+widow/housekeeper/Ghost 10, heir 5, physician 2; physician convicted, Iris inherits,
+Edmund released. These are scripted policies, not new independent agent ratings.
+
+The earlier 75-assertion exercise below records the pre-chapter case. Its ledger-only
+Ghost objective no longer applies: the new independent audit is counterplay for
+concealment, and both affected objectives disclose it from the beginning.
 
 `tools/test-six-seats.ps1` launches six independent Godot ENet processes on one
 machine. Each seat follows an explicit motive-oriented test policy, moves through
@@ -44,9 +57,10 @@ enough in unscripted play.
 The Medium has a comparatively reliable route to preparation and evidence points.
 Julian and Blackwell depend more on persuading others; their low scores here identify
 a balance question, not proof of a universal advantage from one scripted match.
-Destroying the ledger can foreclose another role's objective. That consequence needs
-clear feedback and alternative ways to stay competitive, without making secrets
-meaningless. An independent multi-seed policy evaluation and human sessions are next.
+The original exercise found that destroying the ledger could foreclose another role's
+objective. The chapter-aware case now supplies an independent final audit and clear
+upfront goal wording. Whether that counterplay is balanced still needs unscripted
+evaluation and human sessions; this scripted outcome cannot establish fairness.
 
 The reported reliquary dead end was also a presentation problem: collecting a clue
 closed its panel, and “the year that changed everything” did not identify what to

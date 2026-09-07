@@ -17,14 +17,62 @@ func _init(owner_ui) -> void:
 func task(id: String) -> void:
 	var data = CaseData.TASKS[id]
 	var body = ui.dialog(data.name, "PREPARE THE THRESHOLD", "task")
+	ui.navigation.set_back("Journal", ui.journal.open)
 	body.add_child(UIK.paragraph(data.description, 27, UIK.CREAM))
+	if Session.view.chapter.locked.has(id):
+		body.add_child(UIK.paragraph(Session.view.chapter.locked[id], 25, UIK.GOLD))
+		(
+			body
+			. add_child(
+				(
+					UIK
+					. paragraph(
+						"The apparatus becomes available for every living guest when that investigation begins. See the estate guide for tonight's schedule.",
+						21
+					)
+				)
+			)
+		)
+		body.add_child(UIK.button("Back to journal", ui.journal.open))
+		return
 	if Session.view.tasks[id] != "":
 		body.add_child(UIK.label("✓  The apparatus is ready.", 27, UIK.TEAL))
+		(
+			body
+			. add_child(
+				(
+					UIK
+					. paragraph(
+						(
+							CaseData.person(Session.view.tasks[id]).name
+							+ " already completed this preparation. It counts toward the whole circle's release ritual; it cannot award another preparation point."
+						),
+						23
+					)
+				)
+			)
+		)
+		body.add_child(UIK.button("Back to journal", ui.journal.open))
 		return
 	if Session.local_role == "ghost":
 		body.add_child(
 			UIK.paragraph(
 				"Your hands pass through it. Lead a living guest to this apparatus.", 23, UIK.TEAL
+			)
+		)
+		return
+	if Session.view.phase != "investigation":
+		(
+			body
+			. add_child(
+				(
+					UIK
+					. paragraph(
+						"Preparations are available during investigation. Return when the circle breaks; any living guest can use this apparatus.",
+						23,
+						UIK.TEAL
+					)
+				)
 			)
 		)
 		return
@@ -47,9 +95,16 @@ func task(id: String) -> void:
 					Sound.play("click", -22)
 			)
 			body.add_child(tuner)
-			body.add_child(
-				UIK.paragraph(
-					"Use the mouse, or focus the dial and press the arrow keys for fine tuning.", 17
+			(
+				body
+				. add_child(
+					(
+						UIK
+						. paragraph(
+							"Focus the dial with the D-pad, then press left/right for fine tuning. Mouse and arrow keys also work.",
+							17
+						)
+					)
 				)
 			)
 			body.add_child(
@@ -207,7 +262,7 @@ func circle() -> void:
 				(
 					UIK
 					. paragraph(
-						"Three sittings lead to the final testament. The host may advance a phase early, or let the clock do it.",
+						"Three sittings lead to the final testament. In solo you control the pace: convene early when ready. Online, the host advances the circle or waits for the clock.",
 						20
 					)
 				)

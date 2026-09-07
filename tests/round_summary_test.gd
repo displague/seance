@@ -25,15 +25,15 @@ func pure_rules() -> void:
 		rules.view_for("medium").phase_info.countdown == "UNTIL SÉANCE 1",
 		"first timer names the next phase"
 	)
-	rules.state.positions.doctor = CaseData.CLUES.ledger.pos
-	expect(rules.act("doctor", "collect", {"id": "ledger"}) == "", "private recovery succeeds")
-	expect(rules.act("doctor", "destroy", {"id": "ledger"}) == "", "private destruction succeeds")
+	rules.state.positions.doctor = CaseData.CLUES.flowers.pos
+	expect(rules.act("doctor", "collect", {"id": "flowers"}) == "", "private recovery succeeds")
+	expect(rules.act("doctor", "destroy", {"id": "flowers"}) == "", "private destruction succeeds")
 	rules.state.positions.medium = CaseData.CLUES.vial.pos
 	rules.act("medium", "collect", {"id": "vial"})
 	rules.act("medium", "reveal", {"id": "vial"})
 	rules.act("medium", "reveal", {"id": "vial"})
-	rules.state.positions.medium = CaseData.TASKS.radio.pos
-	rules.act("medium", "task", {"id": "radio", "answer": CaseData.TASKS.radio.solution})
+	rules.state.positions.medium = Vector3(0, 0, -2.9)
+	rules.act("medium", "task", {"id": "candles", "answer": CaseData.TASKS.candles.solution})
 	expect(rules.state.activity.medium.revealed == 1, "failed action does not earn another award")
 	var expected_phases = [
 		"seance", "investigation", "seance", "investigation", "seance", "judgment", "ended"
@@ -67,7 +67,7 @@ func pure_rules() -> void:
 				"secret recovery and destruction remain hidden"
 			)
 			expect(
-				not str(view.recap).contains("Keep the account ledger"),
+				not str(view.recap).contains(CaseData.PEOPLE.doctor.goals[1]),
 				"no hidden objective in recap"
 			)
 			expect(view.final_summary.is_empty(), "full scores withheld before dawn")

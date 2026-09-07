@@ -111,7 +111,10 @@ func run() -> void:
 	await pad(JOY_BUTTON_X)
 	expect(game.ui.modal == "journal", "west button opens journal")
 	await pad(JOY_BUTTON_B)
-	await pad(JOY_BUTTON_START)
+	var pause_button = (
+		JOY_BUTTON_BACK if Input.get_joy_name(0).to_lower().contains("stadia") else JOY_BUTTON_START
+	)
+	await pad(pause_button)
 	expect(game.ui.modal == "pause", "start pauses")
 	await pad(JOY_BUTTON_B)
 	expect(game.player.enabled, "back resumes player")

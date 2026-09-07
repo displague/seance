@@ -8,6 +8,11 @@ func _initialize() -> void:
 func run() -> void:
 	var failed = false
 	for path in [
+		"tests/six_seat_test.gd",
+		"tests/solo_live_test.gd",
+		"scripts/case_progression.gd",
+		"scripts/npc_director.gd",
+		"ui/modal_navigation.gd",
 		"scripts/npc_data.gd",
 		"scripts/npc_rules.gd",
 		"scripts/solo_ai.gd",

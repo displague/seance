@@ -16,6 +16,7 @@ func expect(condition: bool, label: String) -> void:
 
 
 func recover(game, role: String, id: String) -> void:
+	game.state.round = maxi(game.state.round, CaseProgression.unlock_round(id))
 	game.state.positions[role] = CaseData.object_data(id).pos
 	expect(game.act(role, "collect", {"id": id}) == "", role + " recovers " + id)
 
@@ -101,6 +102,14 @@ func run() -> void:
 	game.reset(["medium"])
 	recover(game, "heir", "will")
 	recover(game, "medium", "ring")
+	expect(
+		not NpcRules.available(game, "medium", "heir", "request:will"),
+		"private inventory not inferred from options"
+	)
+	expect(
+		talk(game, "medium", "heir", "topic:possessions") == "",
+		"ask about holdings before requesting a private clue"
+	)
 	expect(talk(game, "medium", "heir", "request:will") == "", "NPC makes offer")
 	expect(
 		game.state.items.ring == "medium" and game.state.evidence.will.holder == "heir",
@@ -126,6 +135,7 @@ func run() -> void:
 	game.reset(["medium"])
 	recover(game, "heir", "will")
 	recover(game, "medium", "ring")
+	talk(game, "medium", "heir", "topic:possessions")
 	talk(game, "medium", "heir", "request:will")
 	game.act("medium", "give", {"id": "ring", "target": "keeper"})
 	expect(talk(game, "medium", "heir", "accept:trade") != "", "stale offer rejected")
@@ -176,6 +186,11 @@ func run() -> void:
 	)
 	game.reset(["medium"])
 	recover(game, "keeper", "birth")
+	talk(game, "medium", "keeper", "hint:safe")
+	expect(
+		str(game.state.private_log.medium).contains("I have the register"),
+		"Iris speaks in first person about her own register"
+	)
 	expect(
 		talk(game, "medium", "keeper", "reveal:birth") == "", "request unlocks register in journal"
 	)
@@ -184,6 +199,7 @@ func run() -> void:
 	pattern.compile("born [0-9]+ [A-Za-z]+ ([0-9]{4})")
 	var year = pattern.search(CaseData.CLUES.birth.text).get_string(1)
 	game.state.positions.medium = CaseData.TASKS.safe.pos
+	game.state.round = 3
 	expect(
 		game.act("medium", "task", {"id": "safe", "answer": year}) == "",
 		"puzzle solved from actual recovered text, no hardcoded test answer"
@@ -211,8 +227,8 @@ func run() -> void:
 	expect(game.state.items.ring == "heir", "active heir physically seeks signet")
 	expect(game.state.items.key == "keeper", "active keeper physically seeks key")
 	expect(game.state.items.locket == "widow", "active widow physically seeks locket")
-	expect(game.state.evidence.ledger.holder == "doctor", "doctor competes for ledger")
-	expect(game.state.evidence.birth.holder == "keeper", "keeper recovers lineage")
+	expect(game.state.evidence.ledger.holder == "", "doctor cannot take sealed round-three ledger")
+	expect(game.state.evidence.birth.holder == "", "keeper cannot take sealed round-two register")
 	for npc in NpcDirector.PLANS:
 		expect(CaseData.is_walkable(game.state.positions[npc]), "NPC stays in manor " + npc)
 	expect(

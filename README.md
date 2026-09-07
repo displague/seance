@@ -20,10 +20,10 @@ Compatibility. The game has no Python, API-key, Blender, or cloud runtime depend
 
 Choose **Enter Ashwood → Medium → Begin the rehearsal** for a first visit. Read
 your private dossier, then step inside. Explore before convening the first sitting;
-the house's scripted guests bring their own evidence to the table.
+the house's native guests pursue their own objects and bring recovered evidence to the table.
 
-Choose **Solo with local AI…** for free-text conversation and physically investigating
-guests. LM Studio uses `http://127.0.0.1:1234/v1`; click **Check models**, select
+Choose **Solo with local AI…** to add free-text conversation to those native guests.
+LM Studio uses `http://127.0.0.1:1234/v1`; click **Check models**, select
 LFM2.5-2.6B or Granite 4.1-3B, then choose your character. Both were exercised against
 the real local server. NPCs have distinct histories and motives: show evidence,
 request disclosures, bargain for objects, or arrange a transfer to another guest.
@@ -50,16 +50,21 @@ installation is needed for that bundle. It is not a retail installer.
 | T | Text conversation with server-owned listening rules |
 | G | Ghost manifestations, possession, and silence |
 | M / hold V | Opt into microphone / push to talk |
-| Escape | Close a panel or pause; releases the mouse |
+| Escape | Back to the journal from details; close top-level panels or pause |
 
 Solo pauses while reading a panel. Multiplayer continues while menus are open.
 Mouse sensitivity, master volume, fullscreen, and camera motion are configurable.
 Preferences are saved locally; the current case is **not saved**.
 
 Xbox, PlayStation and Stadia Bluetooth controllers use Godot's standard SDL mappings:
-left/right stick move/look, south button interact, west journal, north circle, Start
-pause, B/Circle back. D-pad up opens spirit powers, down transcript, left opt-in mic,
-right lantern. Hold LB/L1 to talk; press left stick to sprint. Settings include stick
+left/right stick move/look, south button interact, west journal, north circle.
+Stadia ≡ opens the journal directly; … opens pause. Xbox/PlayStation Start/Options
+opens pause and Back/Share opens journal. B/Circle returns details to their journal.
+LB/RB (L1/R1) cycle journal tabs; right stick scrolls panels, with left/right selecting
+the reading pane in conversations. D-pad up opens spirit powers, down transcript,
+left opt-in mic, right lantern. Hold LB/L1 to talk outside journal tabs; keyboard V
+can still speak while reading the journal (not while typing in a text field). Press left
+stick to sprint. Settings include stick
 deadzone, look speed and rumble. A Google Stadia Controller was detected with a known
 SDL mapping during final validation; gameplay tests used synthetic events, not a
 human-operated pad. Bluetooth transport and felt rumble still need a hands-on check.
@@ -81,10 +86,12 @@ score has a separate volume slider and ducks under live speech.
 
 - Six selectable roles: Ghost, Medium, eldest heir, widow, physician, housekeeper.
 - An explorable 3D manor: séance parlour, library, conservatory, memorial chapel.
-- Eight clues; privately collect, transfer, reveal, or destroy evidence.
+- Eight private clues plus a final, fixed public bank-audit reference.
 - Three inheritance objects to claim and gift.
 - Three ritual puzzles: radio tuning, candle symbols, and a sealed reliquary.
-- Three investigation/séance rounds, followed by a final three-part ballot.
+- Three distinct investigation chapters: initial evidence, will/lineage/radio,
+  then financial audit/reliquary; each ends in a séance, followed by final judgment.
+  The schedule and later dependencies are visible in your dossier and estate guide.
 - Separate culprit, beneficiary, and spirit-fate outcomes; release, binding, banishment.
 - Individual 2/3/5-point objectives plus up to three preparation points.
 - Explicit phase recaps with six-player public progress and earned action awards;

@@ -26,6 +26,7 @@ func open(role: String) -> void:
 		"CONVERSATION  /  " + CaseData.person(npc).title.to_upper(),
 		"talk"
 	)
+	ui.navigation.set_back("Journal", ui.journal.people)
 	NpcSpeech.focus(npc)
 	var heading = UIK.hbox(body, 18)
 	AvatarPortrait.add(
@@ -68,6 +69,14 @@ func open(role: String) -> void:
 	right.custom_minimum_size.x = 510
 	right.add_child(UIK.label("WHAT YOU CAN DO", 13, UIK.GOLD))
 	options_box = UIK.scroll(right)
+	options_box.get_parent().set_meta("controller_primary_scroll", true)
+	body.add_child(
+		UIK.label(
+			"RIGHT STICK ↑↓ SCROLLS · ←→ CHANGES PANEL · B / CIRCLE RETURNS TO JOURNAL",
+			12,
+			UIK.MUTED
+		)
+	)
 	status_label = UIK.label("", 15, UIK.TEAL)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_child(status_label)
@@ -100,6 +109,9 @@ func refresh() -> void:
 	if str(data) == signature:
 		return
 	signature = str(data)
+	var focused = ui.get_viewport().gui_get_focus_owner()
+	var restore_focus = focused != null and options_box.is_ancestor_of(focused)
+	var previous_choice = focused.get_meta("conversation_choice", "") if restore_focus else ""
 	UIK.clear(history_box)
 	UIK.clear(options_box)
 	if data.get("blocked", "") != "":
@@ -119,9 +131,15 @@ func refresh() -> void:
 		history_box.add_child(UIK.paragraph(entry.text, 20, UIK.CREAM))
 	for option in data.get("options", []):
 		var button = UIK.button(option.label, choose.bind(option.id))
+		button.set_meta("conversation_choice", option.id)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.custom_minimum_size.y = 48
 		options_box.add_child(button)
+		if restore_focus and option.id == previous_choice:
+			button.grab_focus.call_deferred()
+			restore_focus = false
+	if restore_focus:
+		options_box.get_parent().grab_focus.call_deferred()
 	var scroller = history_box.get_parent() as ScrollContainer
 	scroller.set_deferred("scroll_vertical", 100000)
 

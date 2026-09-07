@@ -107,6 +107,13 @@ func run() -> void:
 	expect(game.player.position.x < -8.5, "library doorway is traversable")
 	expect(game.player.position.y > -0.1, "room floors hold player")
 	await approach("will")
+	expect(session.view.chapter.locked.has("will"), "first investigation keeps will sealed")
+	game.ui.rituals.circle()
+	await press("CONVENE THE SÉANCE")
+	await press("JOIN SÉANCE 1")
+	await press("BREAK THE CIRCLE")
+	await press("CONTINUE INVESTIGATION 2")
+	await approach("will")
 	await press("TAKE INTO YOUR KEEPING")
 	expect(session.view.evidence.will.holder == "medium", "world pickup changes authority")
 	expect(not game.manor.targets.will.visual.visible, "collected object disappears")
@@ -134,6 +141,11 @@ func run() -> void:
 		await press(symbol)
 	await press("LIGHT THE CIRCLE")
 	expect(session.view.tasks.candles == "medium", "candle sequence completes")
+	game.ui.rituals.circle()
+	await press("CONVENE THE SÉANCE")
+	await press("JOIN SÉANCE 2")
+	await press("BREAK THE CIRCLE")
+	await press("CONTINUE INVESTIGATION 3")
 	await approach("safe", Vector3(0, 0, 1.7))
 	var code = game.ui.overlay.find_children("*", "LineEdit", true, false)[0]
 	code.text = "1913"
@@ -142,6 +154,12 @@ func run() -> void:
 		session.view.prepared == 3 and session.view.task_points.medium == 3,
 		"three preparations score once each"
 	)
+	await approach("audit", Vector3(0, 0, -1.7))
+	await press("ENTER AUDIT IN PUBLIC RECORD")
+	expect(
+		session.view.evidence.audit.public, "final chapter audit becomes public by explicit action"
+	)
+	expect(game.manor.targets.audit.visual.visible, "fixed audit remains in the room")
 	game.ui.journal.talk("doctor")
 	await settle()
 	await press("Ask about the death")
@@ -149,16 +167,17 @@ func run() -> void:
 		str(session.view.messages).contains("heart was failing"), "authored conversation responds"
 	)
 	await tap(KEY_ESCAPE)
+	await tap(KEY_ESCAPE)
 	await tap(KEY_C)
 	await press("CONVENE THE SÉANCE")
 	expect(session.view.phase == "seance", "circle advances phase")
-	await press("JOIN SÉANCE 1")
+	await press("JOIN SÉANCE 3")
 	await press("Ask how he died")
 	expect(game.ui.modal == "transcript", "medium question opens private transcript")
 	expect(str(session.view.messages).contains("Bitter flowers"), "ghost response delivered")
 	await capture("transcript")
 	game.ui.close()
-	for i in range(5):
+	for i in range(1):
 		game.ui.rituals.circle()
 		await settle()
 		await press("BREAK THE CIRCLE" if session.view.phase == "seance" else "CONVENE THE SÉANCE")

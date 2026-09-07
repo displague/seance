@@ -151,6 +151,9 @@ static func scroll(parent: Node) -> VBoxContainer:
 	scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroller.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroller.focus_mode = Control.FOCUS_ALL
+	scroller.follow_focus = true
+	scroller.add_theme_stylebox_override("focus", style(Color.TRANSPARENT, GOLD, 3))
 	parent.add_child(scroller)
 	var box = vbox(scroller)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL

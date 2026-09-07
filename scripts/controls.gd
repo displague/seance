@@ -6,6 +6,8 @@ signal device_changed
 
 var device = -1
 var using_pad = false
+var tab_navigation = false
+var tab_talk_latch = false
 
 
 func _ready() -> void:
@@ -84,7 +86,40 @@ func _bind_button(short_name: String, keycode: int, button: int) -> void:
 	InputMap.action_add_event(action, joy)
 
 
+func menu_action(button: int, controller_name: String) -> String:
+	var stadia = controller_name.to_lower().contains("stadia")
+	if button == JOY_BUTTON_START:
+		return "journal" if stadia else "pause"
+	if button == JOY_BUTTON_BACK:
+		return "pause" if stadia else "journal"
+	return ""
+
+
+func pause_prompt() -> String:
+	return "…" if Input.get_joy_name(device).to_lower().contains("stadia") else "START / OPTIONS"
+
+
+func talk_allowed() -> bool:
+	var pad_pressed = device >= 0 and Input.is_joy_button_pressed(device, JOY_BUTTON_LEFT_SHOULDER)
+	if not pad_pressed:
+		tab_talk_latch = false
+	elif tab_navigation:
+		tab_talk_latch = true
+	# Keyboard PTT remains available while LB is reserved for journal tabs.
+	return Input.is_physical_key_pressed(KEY_V) or not (tab_navigation or tab_talk_latch)
+
+
+func _process(_delta: float) -> void:
+	# The pad latch must clear independently of whether Voice is processing.
+	if device < 0 or not Input.is_joy_button_pressed(device, JOY_BUTTON_LEFT_SHOULDER):
+		tab_talk_latch = false
+
+
 func _input(event: InputEvent) -> void:
+	note_device(event)
+
+
+func note_device(event: InputEvent) -> void:
 	var was_pad = using_pad
 	if (
 		event is InputEventJoypadButton
@@ -157,6 +192,8 @@ func prompt(action: String) -> String:
 		or (Input.get_joy_name(device).to_lower().contains("dual"))
 	)
 	var labels = {"interact": "A", "journal": "X", "circle": "Y", "talk": "LB"}
+	if Input.get_joy_name(device).to_lower().contains("stadia"):
+		labels.journal = "≡ / X"
 	if playstation:
 		labels = {"interact": "Cross", "journal": "Square", "circle": "Triangle", "talk": "L1"}
 	return labels.get(action, action)

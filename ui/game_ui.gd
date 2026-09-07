@@ -32,6 +32,7 @@ var phase_seen = ""
 var close_button: Button
 var bottom_hint: Label
 var target_id = ""
+var navigation: ModalNavigation
 
 
 func _ready() -> void:
@@ -74,6 +75,7 @@ func _ready() -> void:
 	rituals = SeanceRituals.new(self)
 	conversation = NpcConversation.new(self)
 	results = SeanceResults.new(self)
+	navigation = ModalNavigation.new(self)
 	menu.build()
 	_build_hud()
 	Controls.device_changed.connect(_controller_focus)
@@ -92,6 +94,7 @@ func _ready() -> void:
 func dialog(
 	title: String, eyebrow: String = "ASHWOOD MANOR", kind: String = "dialog"
 ) -> VBoxContainer:
+	navigation.reset()
 	if kind != "talk":
 		SoloAi.cancel()
 		NpcSpeech.focus("")
@@ -112,7 +115,7 @@ func dialog(
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	titles.add_child(UIK.label(eyebrow, 12, UIK.GOLD))
 	titles.add_child(UIK.label(title, 43, UIK.CREAM, true))
-	close_button = UIK.button("×  CLOSE", close)
+	close_button = UIK.button("×  CLOSE", navigation.back)
 	close_button.custom_minimum_size = Vector2(118, 42)
 	top.add_child(close_button)
 	_focus_close.call_deferred()
@@ -129,6 +132,7 @@ func close() -> void:
 		return
 	SoloAi.cancel()
 	NpcSpeech.focus("")
+	navigation.reset()
 	if modal == "lobby" or modal == "connecting":
 		Session.leave()
 	modal = ""
@@ -151,6 +155,7 @@ func toast(text: String) -> void:
 
 
 func show_menu() -> void:
+	navigation.reset()
 	Voice.stop()
 	Session.leave()
 	modal = ""
@@ -244,12 +249,12 @@ func set_target(id: String) -> void:
 		prompt_label.text = key + "SPEAK TO\n" + CaseData.person(id.trim_prefix("person:")).name
 	else:
 		var data = CaseData.object_data(id)
-		prompt_label.text = (
-			key
-			+ ("PREPARE" if CaseData.TASKS.has(id) else "INSPECT")
-			+ "\n"
-			+ str(data.get("name", ""))
-		)
+		var status = "PREPARE" if CaseData.TASKS.has(id) else "INSPECT"
+		if Session.view.get("chapter", {}).get("locked", {}).has(id):
+			status = "SEALED · SEE SCHEDULE"
+		elif CaseData.TASKS.has(id) and Session.view.get("tasks", {}).get(id, "") != "":
+			status = "PREPARATION COMPLETE"
+		prompt_label.text = (key + status + "\n" + str(data.get("name", "")))
 
 
 func _sync() -> void:
@@ -296,6 +301,8 @@ func _sync() -> void:
 
 
 func _process(delta: float) -> void:
+	if navigation != null:
+		navigation.scroll(delta)
 	if toast_time > 0:
 		toast_time -= delta
 		if toast_time <= 0:
@@ -320,7 +327,7 @@ func _process(delta: float) -> void:
 					Controls.prompt("circle")
 				]
 			)
-			status_label.text = "DPAD: ABILITIES    START: PAUSE"
+			status_label.text = "DPAD: ABILITIES    " + Controls.pause_prompt() + ": PAUSE"
 		if not Session.online and SoloAi.enabled:
 			mic_label.text = (
 				"SOLO MIC READY · TALK TO A GUEST"
@@ -335,6 +342,8 @@ func _process(delta: float) -> void:
 				else "VOICE READY  ·  HOLD " + Controls.prompt("talk") + " TO SPEAK"
 			)
 			mic_label.modulate = UIK.TEAL
+			if Controls.tab_navigation and Controls.using_pad and not Voice.transmitting:
+				mic_label.text = "LB / L1: JOURNAL TABS  ·  V: VOICE"
 		else:
 			mic_label.text = "MICROPHONE OFF  ·  M TO ENABLE"
 			if Controls.using_pad:
@@ -343,9 +352,27 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Start is also ui_accept in some default mappings. Reserve it for pause.
-	if event is InputEventJoypadButton and event.is_action_pressed("game_pause"):
+	if not event is InputEventJoypadButton or not event.pressed:
+		return
+	# These reserved events may be consumed before the autoload sees _input.
+	Controls.note_device(event)
+	var shortcut = Controls.menu_action(event.button_index, Input.get_joy_name(event.device))
+	if shortcut != "":
+		# Reserve menu buttons before a focused widget can interpret ui_accept.
+		if Session.active and Session.view.phase != "ended":
+			if shortcut == "journal":
+				journal.open()
+			elif modal == "pause":
+				close()
+			else:
+				pause_menu()
+		get_viewport().set_input_as_handled()
+	elif event.button_index == JOY_BUTTON_B:
 		_unhandled_input(event)
+	elif event.button_index in [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER]:
+		var direction = -1 if event.button_index == JOY_BUTTON_LEFT_SHOULDER else 1
+		if navigation.shift_tab(direction):
+			get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -357,7 +384,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				else:
 					toast("The case is complete. Choose Leave Ashwood when you are ready.")
 			else:
-				close()
+				navigation.back()
 		elif Session.active:
 			pause_menu()
 		get_viewport().set_input_as_handled()
@@ -391,6 +418,10 @@ func _controller_focus() -> void:
 	set_target(target_id)
 	if Controls.using_pad and get_viewport().gui_get_focus_owner() == null:
 		Controls.focus_first(overlay if modal != "" else menu_root)
+
+
+func _exit_tree() -> void:
+	Controls.tab_navigation = false
 
 
 func pause_menu() -> void:

@@ -129,7 +129,10 @@ static func phase_info(state: Dictionary) -> Dictionary:
 				"label": "INVESTIGATION %d / 3" % round_id,
 				"countdown": "UNTIL SÉANCE %d" % round_id,
 				"next":
-				"Explore, negotiate and prepare. The next bell starts a séance, not a new game.",
+				(
+					CaseProgression.CHAPTERS[round_id - 1].focus
+					+ " The next bell starts a séance, not a new game."
+				),
 				"continue": "CONTINUE INVESTIGATION %d" % round_id
 			}
 		"seance":
@@ -144,8 +147,8 @@ static func phase_info(state: Dictionary) -> Dictionary:
 						"The third sitting ends in judgment. All six guests then seal a final testament."
 						if round_id == 3
 						else (
-							"This is the same case. After discussion, investigation %d of 3 begins."
-							% (round_id + 1)
+							"This is the same case. After discussion, investigation %d of 3 opens: %s"
+							% [round_id + 1, CaseProgression.CHAPTERS[round_id].opens]
 						)
 					)
 				),

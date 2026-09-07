@@ -54,6 +54,10 @@ func run() -> void:
 	await settle()
 	await capture("menu")
 	session.solo("medium")
+	# Widget/consent fixtures start with the final chapter unlocked. The separate
+	# progression suite verifies the real three-stage availability sequence.
+	session.rules.state.round = 3
+	session.publish()
 	game.ui.close()
 	session.rules.state.positions.medium = CaseData.CLUES.birth.pos
 	game.ui.journal.inspect("birth", true)
@@ -92,6 +96,7 @@ func run() -> void:
 	await settle()
 	await press("Ask about their past")
 	expect(visible_text().contains("sign a cheque"), "history appears in actual conversation")
+	await press("Ask what they have found")
 	await press("Ask for: The Last Testament")
 	expect(session.view.items.ring == "medium", "offer does not spend inventory")
 	await capture("trade-offer")

@@ -8,6 +8,7 @@ var gold_unlocked = false
 var receipts: Array = []
 var profile_path = "user://wardrobe.cfg"
 var persistence = true
+var last_award = 0
 
 
 func _ready() -> void:
@@ -95,4 +96,5 @@ func award(snapshot: Dictionary, role: String) -> bool:
 		remembrance = previous
 		receipts = old_receipts
 		return false
+	last_award = remembrance - previous
 	return true

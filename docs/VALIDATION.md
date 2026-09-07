@@ -1,4 +1,81 @@
-# Validation record — 2026-09-06
+# Validation record — 2026-09-07
+
+## Gameplay-feedback follow-up: chapters and controller navigation
+
+Current follow-up source checks cover staged evidence/preparations, listener-specific
+ownership disclosures, first-person puzzle hints, continuing NPC movement, and real
+widgets driven by synthetic SDL gamepad events. The final reviewed source candidate
+passed `tools/check.ps1 -Rendered` with **1,487 distinct checks**, including the
+133-check progression suite and 43-check navigation suite. Rendered repetitions are
+not extra cases. Formatting/lint passed for 65 GDScript files; the source-limit gate
+counted 80 files, largest 699 lines. Engine import and actual compilation passed.
+
+| Suite | Checks |
+| --- | ---: |
+| Authoritative rules | 204 |
+| NPC authority and consent | 99 |
+| Chapter boundaries, anti-lockout audit, continued NPC movement and privacy | 133 |
+| Phase recaps and final ranking UI | 85 |
+| Scoped MCP API and affordance fidelity | 497 |
+| Independent-session harness invariants (offline only) | 82 |
+| Asset/rig/splash checks | 87 |
+| Real scene, raycasts, keyboard, puzzles and all three chapters | 102 |
+| Cosmetics, gamepad, haunting and music | 62 |
+| Conversation and playback UI | 17 |
+| B/Back, bumper tabs, stick panel scrolling, Stadia mappings and PTT isolation | 43 |
+| Three-process ENet lifecycle and synthetic voice routing | 76 |
+
+Godot 4.7 OpenGL Compatibility rendered navigation, round summaries, social panels,
+full gameplay and feature checks successfully. Screenshots include
+`artifacts/navigation-{conversation,schedule}.png` and updated `qa_*`, `social-*`,
+`round-*`, `feature_*` frames. The main worker inspected the actual rendered panels.
+Stadia was detected in rendered mode, but test inputs were injected: Bluetooth
+reliability, physical button labels and felt rumble are not certified by these tests.
+No microphone was opened, no new live LLM trial was run, and no model ratings were
+replaced. The existing negative independent-party findings remain unchanged.
+
+The separate six-peer chapter-aware exercise passed **91 checks** again on the
+final candidate, with agreeing
+replicated final outcomes and a public audit surviving ledger destruction. See
+[scripted exercise](PLAYTEST.md). Its first attempt found a Godot compiler error in
+a multiline test lambda despite gdtoolkit accepting it. That fixture now uses a
+named callback, and the normal compiler harness also loads the six-seat/live-local
+scripts. The negative receipt is `artifacts/party-chapter-parse-failure.err`.
+
+Initial movement regression tests also exposed a chapel-threshold route that could
+strand a guest. The route now exits through the actual doorway, and tests measure
+movement after the initial goal pass in every chapter. These checks establish the
+bounded authored policy's behavior, not human enjoyment or a general AI planner.
+
+The final candidate also covers keyboard push-to-talk while journal bumpers are
+reserved, scroll equivalence at simulated 60/1,000 FPS, physical guests in ordinary
+solo without enabling the model, and a Ghost-requested audit errand. The errand
+waits for chapter three, requires actual NPC arrival, refuses human-controlled
+targets and cannot be promised after the final investigation has ended. Review
+findings and deliberate performance deferrals are recorded in [REVIEW.md](REVIEW.md).
+
+### Rebuilt chapter-aware Windows bundle
+
+`tools/build.ps1 -SkipChecks` produced a **203,447,524-byte** `build/Seance.pck`
+after the final source gate and review. SHA-256:
+`b532fac43c59698a850ae47e7a1c7e62be61d9d60c9e312abc11fabfa0c985b3`.
+From the build directory, the external native gameplay harness passed all **102
+checks** against that PCK with no source project-path argument. A separate rendered
+180-frame startup also passed. Logs: `artifacts/packed-chapters-runtime.log` and
+`artifacts/packed-chapters-rendered.{log,err}`. These repeat existing coverage;
+they are packaging evidence, not additional distinct test cases.
+
+The first packed gameplay run overlapped the six-peer host and could not bind its
+localhost port, failing three host-lobby assertions. Its log is preserved as
+`artifacts/packed-chapters-port-collision.log`. Once the six-peer run exited, the
+same packed harness passed without code or criteria changes. Host-binding tests
+must run serially, as must focus-sensitive rendered tests.
+
+No gameplay changes followed the final source gate. This remains an unsigned
+editor-runtime development bundle, not a Steam or AAA release.
+
+Historical validation below describes the earlier build, not this follow-up's new
+chapter rules or controller behavior.
 
 ## Solo AI, phase recaps and independent-agent infrastructure
 

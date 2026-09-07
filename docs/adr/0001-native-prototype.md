@@ -61,6 +61,31 @@ shared omniscient player/chat context, and paid gameplay advantages. Those are n
 used: they conflict with native authority, explicit local consent, useful blind
 evaluation, or the user's cosmetic-only economy boundary.
 
+### Chapter pacing and discovery addendum — 2026-09-06 (proposed)
+
+The user's playthrough found idle later rounds and dialogue menus leaking private
+ownership. A separate pure `CaseProgression` now supplies the public three-chapter
+schedule and availability; `GameRules.act` enforces it for every caller. Goals are
+fixed and visible from arrival. The final bank audit is an explicitly published,
+non-removable reference that survives destruction of the original ledger. Known
+register/will dependencies are disclosed before irreversible destruction.
+
+NPC ownership beliefs follow explicit listener-specific disclosures, not a live
+inventory menu. Chapter-aware authored plans and ongoing corridor patrols replace
+one-shot movement. This is still one fixed authored case, not a generic case-pack
+engine or unrestricted LLM planner. The UI-only navigation helper owns no gameplay
+permission or scoring decisions; shoulder tab controls suppress accidental PTT.
+Physical goal-driven guests run in both solo modes without a model dependency;
+LM Studio remains a separate opt-in for free dialogue.
+Willing NPCs can accept a legal-channel request to publish the final audit during
+investigation three, including a Ghost request via the Medium at sitting two.
+The errand uses physical movement and ordinary authority; it cannot spend human
+property, expose sealed content early or promise work after the last investigation.
+
+These choices avoid an arbitrary timer-only replay of the first investigation,
+secret future prerequisites, and silently making every recovered clue public.
+The fixed audit gives concealment counterplay without recovering a destroyed item.
+
 ## Consequences
 
 Rules are testable without rendering. Solo and multiplayer share validation and

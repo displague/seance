@@ -82,14 +82,12 @@ func run() -> void:
 			await act("reveal", {"id": "vial"})
 			await collect("flowers")
 			await act("reveal", {"id": "flowers"})
-			for id in ["candles", "radio"]:
+			for id in ["candles"]:
 				await go(id)
 				await act("task", {"id": id, "answer": CaseData.TASKS[id].solution})
 				expect(session.view.tasks[id] == role, "prepared " + id)
 		"heir":
 			await collect("ring")
-			await collect("will")
-			await act("reveal", {"id": "will"})
 			await act(
 				"chat",
 				{
@@ -104,15 +102,12 @@ func run() -> void:
 			await act("give", {"id": "locket", "target": "keeper"})
 			expect(session.view.items.locket == "keeper", "third-party gift landed")
 		"keeper":
-			await collect("birth")
 			await collect("key")
-			await act("reveal", {"id": "birth"})
 			await act(
 				"chat",
 				{"text": "The register and the will are my claim. I want my home, not revenge."}
 			)
 		"doctor":
-			await collect("ledger")
 			await act(
 				"chat",
 				{
@@ -120,8 +115,6 @@ func run() -> void:
 					"Lenore carried the glass. Do not confuse a substance with the hand that delivered it."
 				}
 			)
-			await act("destroy", {"id": "ledger"})
-			expect(session.view.evidence.ledger.destroyed, "doctor conceals motive to pursue goal")
 		"ghost":
 			await act("manifest", {"word": "BETRAYAL"})
 			await act("chat", {"text": "PARTY_PRIVATE_BEFORE_SITTING"})
@@ -155,10 +148,22 @@ func run() -> void:
 			await until(func(): return barrier.reports.values().count(2) == 5),
 			"all peers heard legal channels"
 		)
-		for i in range(5):
-			session.advance()
+		session.advance()
 	else:
 		barrier.report.rpc_id(1, 2)
+	for chapter in [2, 3]:
+		expect(await until(in_chapter.bind(chapter)), "new investigation replicated")
+		await chapter_actions(chapter)
+		if role == "medium":
+			expect(
+				await until(func(): return barrier.reports.values().count(chapter + 1) == 5),
+				"peers complete chapter %d opportunities" % chapter
+			)
+			session.advance()
+			await create_timer(0.4).timeout
+			session.advance()
+		else:
+			barrier.report.rpc_id(1, chapter + 1)
 	expect(await until(func(): return session.view.phase == "judgment"), "judgment reached")
 	var culprit = "widow" if role in ["heir", "doctor"] else "doctor"
 	await act(
@@ -185,3 +190,36 @@ func run() -> void:
 	await create_timer(0.2).timeout
 	print("SIX SEAT ", role, ": ", checks, " checks, ", failures, " failures")
 	quit(1 if failures else 0)
+
+
+func in_chapter(chapter: int) -> bool:
+	return session.view.phase == "investigation" and session.view.round == chapter
+
+
+func chapter_actions(chapter: int) -> void:
+	if chapter == 2:
+		if role == "medium":
+			await go("radio")
+			await act("task", {"id": "radio", "answer": CaseData.TASKS.radio.solution})
+			expect(session.view.tasks.radio == role, "prepared newly unsealed radio")
+		elif role == "heir":
+			await collect("will")
+			await act("reveal", {"id": "will"})
+		elif role == "keeper":
+			await collect("birth")
+			await act("reveal", {"id": "birth"})
+	else:
+		if role == "doctor":
+			await collect("ledger")
+			await act("destroy", {"id": "ledger"})
+			expect(
+				session.view.evidence.ledger.destroyed,
+				"doctor conceals original financial evidence"
+			)
+		elif role == "medium":
+			await go("audit")
+			await act("collect", {"id": "audit"})
+			expect(
+				session.view.evidence.audit.public,
+				"final audit entered as public reference over network"
+			)

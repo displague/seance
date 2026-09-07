@@ -24,6 +24,13 @@ hook with human players before scaling content or paying for a large asset libra
   and accessible non-audio equivalents for critical clues.
 - A second authored case before procedural generation. Reusable case schemas,
   solvability checks, motive-interaction graphs, and explicit balancing budgets.
+- Murder-mystery-dinner-style stories in other settings can share conversation,
+  evidence, motives and judgment systems; use a second authored story to drive
+  extraction instead of assuming the current hardcoded Ashwood case is generic.
+  See [case design and current chapter structure](CASE_DESIGN.md).
+- Paper-doll neutral character bases, modular garments/accessories and a broader
+  earned cosmetic catalog. Existing Remembrance unlocks one gold-brooch option;
+  more earned choices and premium infrastructure are not yet implemented.
 
 ## Release gates
 

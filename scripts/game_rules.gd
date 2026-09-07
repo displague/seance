@@ -50,6 +50,7 @@ func reset(human_roles: Array = ["medium"]) -> void:
 	log_event(
 		"The doors are locked. Dawn will execute the will. What happens before it belongs to you."
 	)
+	CaseProgression.announce(self)
 
 
 func log_event(text: String) -> void:
@@ -119,8 +120,24 @@ func act(role: String, action: String, payload: Dictionary = {}) -> String:
 				return "The dead cannot carry objects. Guide the living."
 			if state.phase != "investigation" or not nearby(role, id):
 				return "Approach this object during investigation."
+			if CaseProgression.locked(state, id):
+				return CaseProgression.lock_message(id)
 			if state.evidence.has(id):
 				var clue = state.evidence[id]
+				if CaseData.CLUES[id].get("reference", false):
+					if clue.public:
+						return "This reference is already in the public record."
+					clue.public = true
+					log_event(
+						(
+							CaseData.person(role).name
+							+ " entered “"
+							+ CaseData.CLUES[id].name
+							+ "” in the public record."
+						)
+					)
+					RoundSummary.record(state, role, "reveal", id)
+					return ""
 				if clue.destroyed or clue.holder != "":
 					return "Someone has already taken this evidence."
 				clue.holder = role
@@ -187,6 +204,8 @@ func act(role: String, action: String, payload: Dictionary = {}) -> String:
 				or not nearby(role, id)
 			):
 				return "Approach the apparatus during investigation."
+			if CaseProgression.locked(state, id):
+				return CaseProgression.lock_message(id)
 			if state.tasks[id] != "":
 				return "This preparation is already complete."
 			if str(payload.get("answer", "")) != CaseData.TASKS[id].solution:
@@ -352,6 +371,7 @@ func advance() -> void:
 				state.phase = "investigation"
 				state.remaining = 240.0
 				log_event("The circle breaks. Investigation " + str(state.round) + " begins.")
+				CaseProgression.announce(self)
 		"judgment":
 			resolve()
 
@@ -390,6 +410,8 @@ func bot_sitting() -> void:
 		if humans.has(role):
 			continue
 		var id = assignments[role]
+		if CaseProgression.locked(state, id):
+			continue
 		var clue = state.evidence[id]
 		if clue.holder == "" and not clue.destroyed:
 			if not state.interactive_guests:
@@ -403,6 +425,8 @@ func bot_sitting() -> void:
 			RoundSummary.note(state, role, "destroyed")
 	if state.round >= 2 and not state.interactive_guests:
 		for id in ["radio", "safe"]:
+			if CaseProgression.locked(state, id):
+				continue
 			if state.tasks[id] == "" and not humans.has("medium"):
 				state.tasks[id] = "medium"
 				state.task_points.medium += 1
@@ -422,7 +446,12 @@ func resolve() -> void:
 		return
 	var proven = (
 		public_clue("vial")
-		and (public_clue("ledger") or public_clue("flowers") or public_clue("clock"))
+		and (
+			public_clue("ledger")
+			or public_clue("audit")
+			or public_clue("flowers")
+			or public_clue("clock")
+		)
 	)
 	for role in CaseData.ROLES:
 		if state.votes.has(role):
@@ -431,6 +460,7 @@ func resolve() -> void:
 			NpcRules.knows(self, role, "vial")
 			and (
 				NpcRules.knows(self, role, "ledger")
+				or NpcRules.knows(self, role, "audit")
 				or NpcRules.knows(self, role, "clock")
 				or NpcRules.knows(self, role, "flowers")
 			)
@@ -505,12 +535,16 @@ func completed_goals(role: String) -> Array:
 				end.culprit != "widow" and end.culprit != ""
 			]
 		"doctor":
-			return [public_clue("vial"), not public_clue("ledger"), end.culprit == "widow"]
+			return [
+				public_clue("vial"),
+				not (public_clue("ledger") or public_clue("audit")),
+				end.culprit == "widow"
+			]
 		"keeper":
 			return [public_clue("birth"), state.items.key == "keeper", end.heir == "keeper"]
 		"ghost":
 			return [
-				public_clue("vial") and public_clue("ledger"),
+				public_clue("vial") and (public_clue("ledger") or public_clue("audit")),
 				end.heir == "keeper",
 				end.ending == "release"
 			]
@@ -526,6 +560,7 @@ func view_for(role: String) -> Dictionary:
 	view.erase("activity")
 	view.erase("activity_baseline")
 	view["phase_info"] = RoundSummary.phase_info(state)
+	view["chapter"] = CaseProgression.view_for(state)
 	view["messages"] = state.private_log.get(role, []).duplicate()
 	view["role"] = role
 	view["humans"] = humans.duplicate()

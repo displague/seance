@@ -5,7 +5,7 @@ var ui
 var transcript_box: VBoxContainer
 var transcript_input: LineEdit
 var last_message_signature = ""
-var pending_collect = ""
+var pending_evidence: Dictionary = {}
 
 
 func _init(owner_ui) -> void:
@@ -15,17 +15,29 @@ func _init(owner_ui) -> void:
 
 func _tabs(body: VBoxContainer, selected: String) -> void:
 	var row = UIK.hbox(body, 10)
-	for entry in [
+	var entries = [
 		["Evidence", open],
 		["Inheritance", inheritance],
 		["Your motives", dossier],
 		["The guests", people],
 		["Estate guide", estate],
 		["Transcript", transcript]
-	]:
+	]
+	var actions = []
+	var selected_index = 0
+	for entry in entries:
+		if entry[0] == selected:
+			selected_index = actions.size()
+		actions.append(entry[1])
 		var button = UIK.button(entry[0], entry[1], entry[0] == selected)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(button)
+	ui.navigation.tabs(actions, selected_index)
+	body.add_child(
+		UIK.label(
+			"LB / L1  PREVIOUS TAB    RB / R1  NEXT TAB    RIGHT STICK  SCROLL", 12, UIK.MUTED
+		)
+	)
 
 
 func dossier() -> void:
@@ -35,7 +47,7 @@ func dossier() -> void:
 	_tabs(body, "Your motives")
 	var columns = UIK.hbox(body, 35)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var left = UIK.vbox(columns, 18)
+	var left = UIK.scroll(columns)
 	left.custom_minimum_size.x = 425
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left.add_child(UIK.label("You were invited for a reason.", 29, UIK.GOLD, true))
@@ -45,6 +57,33 @@ func dossier() -> void:
 	left.add_child(UIK.paragraph(data.secret, 20))
 	left.add_child(UIK.label("A RUMOR YOU HEARD", 12, UIK.GOLD))
 	left.add_child(UIK.paragraph(data.rumor, 19, UIK.CREAM))
+	left.add_child(UIK.label("TONIGHT'S THREE CHAPTERS", 12, UIK.GOLD))
+	(
+		left
+		. add_child(
+			(
+				UIK
+				. paragraph(
+					"Ready to move on? Open the circle (C / Y / Triangle) to convene early in solo, or ask your online host.",
+					16
+				)
+			)
+		)
+	)
+	for chapter in Session.view.chapter.schedule:
+		left.add_child(UIK.paragraph(chapter, 17))
+	(
+		left
+		. add_child(
+			(
+				UIK
+				. paragraph(
+					"Your goals are fixed from arrival. The register supplies the later reliquary's year; the candles and radio are an independent release path. The final audit cannot be carried off or destroyed.",
+					16
+				)
+			)
+		)
+	)
 	var right = UIK.vbox(columns, 14)
 	right.custom_minimum_size.x = 600
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -103,6 +142,9 @@ func open() -> void:
 		)
 		if evidence.destroyed and known:
 			state_text = "DESTROYED"
+		if Session.view.chapter.locked.has(id):
+			state_text = Session.view.chapter.locked[id].to_upper()
+			text = data.name
 		var button = UIK.button("", func(): inspect(id))
 		button.custom_minimum_size = Vector2(590, 110)
 		var content = UIK.vbox(button, 7)
@@ -121,7 +163,7 @@ func open() -> void:
 			(
 				UIK
 				. paragraph(
-					"Evidence stays private until you reveal it. Public evidence influences the house's final votes. Hidden evidence may be given away or destroyed.",
+					"Recovered evidence stays private until revealed. The final bank audit is a fixed public reference: entering it in the record shares it immediately. Public evidence influences the house's final votes.",
 					16
 				)
 			)
@@ -175,10 +217,11 @@ func inspect(id: String, in_world: bool = false) -> void:
 		data.room.to_upper() + "  /  " + data.tag,
 		"clue"
 	)
+	ui.navigation.set_back("Journal", open)
 	body.add_child(UIK.label("THE EVIDENCE" if known else "SOMETHING LEFT BEHIND", 12, UIK.GOLD))
 	var paper = UIK.panel(body, Color("c9bfa7"), Color("8d7c5d"), 32)
 	paper.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var page = UIK.vbox(paper, 18)
+	var page = UIK.scroll(paper)
 	var passage = UIK.paragraph(data.text if known else data.summary, 26, Color("2c302b"))
 	passage.add_theme_font_override("font", UIK.serif())
 	page.add_child(passage)
@@ -195,6 +238,22 @@ func inspect(id: String, in_world: bool = false) -> void:
 			)
 		)
 	var actions = UIK.hbox(body)
+	actions.add_child(UIK.button("Back to journal", open))
+	if Session.view.chapter.locked.has(id):
+		actions.add_child(UIK.paragraph(Session.view.chapter.locked[id], 20, UIK.GOLD))
+		return
+	if data.get("reference", false):
+		if evidence.public:
+			actions.add_child(
+				UIK.label("✓  Fixed public record — available to everyone.", 20, UIK.TEAL)
+			)
+		elif in_world and Session.local_role != "ghost":
+			actions.add_child(
+				UIK.button(
+					"ENTER AUDIT IN PUBLIC RECORD", _evidence_action.bind("collect", id), true
+				)
+			)
+		return
 	if not evidence.destroyed and evidence.holder == Session.local_role:
 		if not evidence.public:
 			actions.add_child(
@@ -215,29 +274,31 @@ func inspect(id: String, in_world: bool = false) -> void:
 			)
 	elif evidence.destroyed:
 		actions.add_child(UIK.label("The original has been destroyed.", 19, UIK.MUTED))
-	actions.add_child(UIK.button("Back to journal", open))
 
 
 func _evidence_action(action: String, id: String) -> void:
-	if action == "collect":
-		pending_collect = id
+	pending_evidence = {"action": action, "id": id}
 	Session.command(action, {"id": id})
-	if action != "collect":
-		ui.close()
 
 
 func _command_finished(action: String, payload: Dictionary, error: String) -> void:
-	if action != "collect" or str(payload.get("id", "")) != pending_collect:
+	if action != pending_evidence.get("action") or payload.get("id") != pending_evidence.get("id"):
 		return
-	var id = pending_collect
-	pending_collect = ""
-	if error == "" and ui.modal in ["clue", "item"]:
+	var id: String = pending_evidence.id
+	pending_evidence = {}
+	if error == "" and ui.selected_clue == id and ui.modal in ["clue", "item", "give", "confirm"]:
 		Sound.play("clue", -5)
-		inspect(id)
+		if action == "destroy":
+			open()
+		else:
+			inspect(id)
 
 
 func confirm_destroy(id: String) -> void:
 	var body = ui.dialog("Some truths do not survive", "DESTROY EVIDENCE", "confirm")
+	ui.navigation.set_back("Evidence", inspect.bind(id))
+	if Session.view.chapter.dependencies.has(id):
+		body.add_child(UIK.paragraph(Session.view.chapter.dependencies[id], 23, UIK.GOLD))
 	body.add_child(
 		UIK.paragraph(
 			(
@@ -292,9 +353,12 @@ func inheritance() -> void:
 
 
 func inspect_item(id: String, in_world: bool = false) -> void:
+	ui.selected_clue = id
 	var data = CaseData.ITEMS[id]
 	var holder = Session.view.items[id]
 	var body = ui.dialog(data.name, "AN OBJECT WITH A HISTORY", "item")
+	ui.navigation.set_back("Journal", inheritance)
+	body.add_child(UIK.button("Back to journal", inheritance))
 	body.add_child(UIK.paragraph(data.description, 29, UIK.CREAM))
 	body.add_child(UIK.spacer(25))
 	if data.cursed:
@@ -319,11 +383,12 @@ func inspect_item(id: String, in_world: bool = false) -> void:
 				UIK.GOLD
 			)
 		)
-	body.add_child(UIK.button("Back to inheritance", inheritance))
 
 
 func give(id: String) -> void:
 	var body = ui.dialog("A gift is never just a gift", "TRANSFER OWNERSHIP", "give")
+	ui.navigation.set_back("Object", inspect.bind(id))
+	body.add_child(UIK.button("Back to the object", inspect.bind(id)))
 	body.add_child(
 		UIK.paragraph(
 			(
@@ -382,6 +447,23 @@ func talk(role: String) -> void:
 func estate() -> void:
 	var body = ui.dialog("A house full of unfinished business", "ESTATE GUIDE", "estate")
 	_tabs(body, "Estate guide")
+	var list = UIK.scroll(body)
+	list.add_child(UIK.label("NOW: " + Session.view.chapter.title.to_upper(), 22, UIK.GOLD))
+	list.add_child(UIK.paragraph(Session.view.chapter.focus, 20, UIK.CREAM))
+	for chapter in Session.view.chapter.schedule:
+		list.add_child(UIK.paragraph(chapter, 18))
+	(
+		list
+		. add_child(
+			(
+				UIK
+				. paragraph(
+					"All personal goals are visible from arrival. Keep or share the register for the final reliquary's year. The candles and radio also permit Release. The nursery key is a keepsake; the nursery is outside this playable wing.",
+					18
+				)
+			)
+		)
+	)
 	var rows = [
 		[
 			"CENTRE",
@@ -405,7 +487,7 @@ func estate() -> void:
 		]
 	]
 	for entry in rows:
-		var box = UIK.vbox(UIK.panel(body, UIK.INK, Color("33483f"), 15), 4)
+		var box = UIK.vbox(UIK.panel(list, UIK.INK, Color("33483f"), 15), 4)
 		box.add_child(UIK.label(entry[0] + "   /   " + entry[1].to_upper(), 13, UIK.GOLD))
 		box.add_child(UIK.paragraph(entry[2], 19, UIK.CREAM))
 
@@ -473,8 +555,8 @@ func refresh_transcript() -> void:
 
 
 func _give_to(id: String, role: String) -> void:
+	pending_evidence = {"action": "give", "id": id}
 	Session.command("give", {"id": id, "target": role})
-	ui.close()
 
 
 func _ask(role: String, topic: String) -> void:

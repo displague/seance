@@ -250,6 +250,7 @@ func journal(role: String) -> Dictionary:
 	return {
 		"ok": true,
 		"dossier": _dossier(role),
+		"chapter": CaseProgression.view_for(game.state),
 		"evidence": evidence,
 		"held_items": held,
 		"messages": game.state.private_log[role].duplicate(),
@@ -277,7 +278,16 @@ func inspect(role: String, id: String) -> Dictionary:
 				"name": data.name,
 				"summary": data.summary,
 				"actions": ["collect"] if _probe(role, "collect", {"id": id}) == "" else [],
-				"note": "Collect to read and keep the full document."
+				"note":
+				(
+					CaseProgression.lock_message(id)
+					if CaseProgression.locked(game.state, id)
+					else (
+						"Collect enters this fixed reference in the public record immediately; it cannot be carried, concealed or destroyed."
+						if data.get("reference", false)
+						else "Collect to examine and keep the full evidence."
+					)
+				)
 			}
 		}
 	if game.state.items.has(id):
@@ -297,6 +307,12 @@ func inspect(role: String, id: String) -> Dictionary:
 		"name": data.name,
 		"description": data.description,
 		"completed_by": game.state.tasks[id],
+		"availability":
+		(
+			CaseProgression.lock_message(id)
+			if CaseProgression.locked(game.state, id)
+			else "Unsealed; any living guest may prepare during investigation."
+		),
 		"actions": ["task"] if _task_ready(role, id) else [],
 		"answer_format": "text"
 	}
@@ -426,6 +442,7 @@ func _public() -> Dictionary:
 		"inheritance_claims": game.state.items.duplicate()
 	}
 	result.phase_info = RoundSummary.phase_info(game.state)
+	result.chapter = CaseProgression.view_for(game.state)
 	result.recap = game.state.get("recap", {}).duplicate(true)
 	result.haunt = {
 		"kind": game.state.haunt.kind,
@@ -503,7 +520,13 @@ func _objects(room: String) -> Array:
 			{
 				"id": id,
 				"name": data.name,
-				"kind": "apparatus" if CaseData.TASKS.has(id) else "object"
+				"kind": "apparatus" if CaseData.TASKS.has(id) else "object",
+				"availability":
+				(
+					CaseProgression.lock_message(id)
+					if CaseProgression.locked(game.state, id)
+					else "Unsealed"
+				)
 			}
 		)
 	return result

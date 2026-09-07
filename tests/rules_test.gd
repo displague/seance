@@ -16,11 +16,15 @@ func expect(condition: bool, message: String) -> void:
 
 
 func collect(game: GameRules, role: String, id: String) -> void:
+	# These ownership/scoring fixtures start at the object's valid chapter.
+	# Natural chapter boundaries and early denials are in progression_test.gd.
+	game.state.round = maxi(game.state.round, CaseProgression.unlock_round(id))
 	game.state.positions[role] = CaseData.object_data(id).pos
 	expect(game.act(role, "collect", {"id": id}) == "", "collect " + id)
 
 
 func prepare(game: GameRules, role: String, id: String) -> void:
+	game.state.round = maxi(game.state.round, CaseProgression.unlock_round(id))
 	game.state.positions[role] = CaseData.TASKS[id].pos
 	expect(
 		game.act(role, "task", {"id": id, "answer": CaseData.TASKS[id].solution}) == "",
@@ -144,6 +148,7 @@ func test_possession_and_silence() -> void:
 func test_preparations_and_phase() -> void:
 	var game = GameRules.new()
 	game.reset(CaseData.ROLES)
+	game.state.round = 2
 	game.state.positions.medium = CaseData.TASKS.radio.pos
 	expect(
 		game.act("medium", "task", {"id": "radio", "answer": "88.8"}) != "",

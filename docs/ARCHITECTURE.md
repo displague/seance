@@ -6,6 +6,7 @@ Native Godot/GDScript. Python is restricted to offline asset generation.
 | --- | --- |
 | Authored cast, clues, geometry positions, motives | `scripts/case_data.gd` |
 | Authoritative actions, permissions, phases, scoring, redaction | `scripts/game_rules.gd` |
+| Public chapter schedule, availability and irreversible-action warnings | `scripts/case_progression.gd` |
 | Authored NPC identities, voice personas and puzzle hints | `scripts/npc_data.gd` |
 | Private knowledge, offers, consent, disclosures and political bargains | `scripts/npc_rules.gd` |
 | Goal-driven solo investigation along authored physical routes | `scripts/npc_director.gd` |
@@ -18,6 +19,7 @@ Native Godot/GDScript. Python is restricted to offline asset generation.
 | Scene composition and snapshot-driven presentation | `scripts/main.gd` |
 | Manor shell, furniture, props, player, character rigs | `world/` |
 | Menus, dossier, evidence, ritual inputs, results | `ui/` |
+| Contextual Back, bumper tabs and reading-panel stick scrolling | `ui/modal_navigation.gd` |
 | Disabled-by-default scoped playtest commands and loopback MCP transport | `scripts/playtest_tools.gd`, `scripts/playtest_bridge.gd` |
 | Isolated local-model player/viewer sessions, receipts and reports | `tools/agent_playtest.gd`, `tools/playtest_*.gd` |
 | Compiler, rules, native runtime, real network processes | `tests/` |
@@ -71,10 +73,19 @@ LOD, and occlusion need a dedicated production optimization pass.
 CharacterMotion attaches Meshy's matching included walk/run animations to each
 rigged base. Horizontal root motion is stripped because networked world movement
 owns displacement. The idle pose is adapted from the base and locomotion clips.
-Rehearsal guests change stage marks at phase boundaries. AI-solo living guests use
+Solo guests change stage marks at phase boundaries. Both authored and AI-solo guests use
 host-owned investigation positions and authored corridor routes to seek goal objects.
 They must reach an object before collecting through GameRules. This is a bounded
 native movement policy, not a general navigation mesh or language-model planner.
+
+Chapter changes reset each NPC's goal pass; completed/held objects are skipped,
+newly unsealed objects become eligible, and safe-corridor patrols continue afterward.
+Tasks cannot be attempted early, including through MCP or NPC actions. Inventory
+disclosures are listener-specific; menus do not enumerate hidden NPC inventories.
+The chapter-three bank audit is a fixed public reference with an explicit publish
+action, independent of the destructible physician's ledger. See [case design](CASE_DESIGN.md).
+The LM Studio opt-in changes free dialogue, not native solo movement or agency.
+Vacant online seats retain the simpler sitting-time house policy for now.
 
 Compatibility rendering was chosen for a stable native baseline. No GDExtension,
 engine fork, downloaded runtime script, or paid-service call is required to play.
