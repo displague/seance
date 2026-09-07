@@ -16,6 +16,7 @@ var qa_mode = false
 
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
 	manor = AshwoodManor.new()
 	add_child(manor)
 	characters = SeanceCharacters.new()
@@ -46,7 +47,13 @@ func _ready() -> void:
 		DisplayServer.window_set_size(Vector2i(1440, 810))
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		Sound.request_quit()
+
+
 func _start() -> void:
+	player.configure_role(Session.local_role)
 	player.camera.make_current()
 	player.place(Session.view.positions[Session.local_role])
 	last_phase = Session.view.phase
@@ -77,6 +84,7 @@ func _sync() -> void:
 	if not Session.active:
 		return
 	var view = Session.view
+	Wardrobe.award(view, Session.local_role)
 	manor.sync(view)
 	characters.sync(view)
 	if view.phase != last_phase:
@@ -86,9 +94,6 @@ func _sync() -> void:
 	if view.manifest != last_manifest:
 		last_manifest = view.manifest
 		Sound.play("knock", -3)
-		var tween = create_tween()
-		tween.tween_property(manor.environment, "ambient_light_energy", 0.09, 0.12)
-		tween.tween_property(manor.environment, "ambient_light_energy", 0.48, 0.8)
 		ui.toast("THE SPIRIT ANSWERS:  " + view.manifest_word)
 	ui.journal.refresh_transcript()
 	ui.rituals.refresh_ballot()

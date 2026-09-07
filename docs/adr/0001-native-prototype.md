@@ -30,6 +30,37 @@ asset-generation credential source. There is no earlier Git history.
 - Use the game's own PNG boot splash, generated from its original branding.
   Preserve the engine and dependency notices in development bundles.
 
+## Prototype expansion — 2026-09-06 (proposed)
+
+This addendum records the user's subsequent requirements and the implemented
+boundaries. It does not mark this decision record as human-accepted.
+
+- Optional solo dialogue uses opt-in loopback LM Studio. Authored NPC personas,
+  private knowledge, bargains, consent and actions remain native and host-owned.
+  Model text is fallible dialogue, never evidence or an ownership/scoring oracle.
+  Native Piper and whisper.cpp are separately installed optional helpers; voice
+  capture is explicit and transcripts require review before sending. No Python
+  runtime or voice weights enter the game package. See [solo AI](../SOLO_AI.md).
+- Appearance preferences are per character and replicated as allowlisted cosmetic
+  identifiers. Base characters and gameplay are free; prototype Remembrance is a
+  local earned reward, not a paid entitlement or secure account balance. Future
+  purchases need a separate service/licensing design. See [cosmetics](../COSMETICS.md).
+- Public phase recaps and full final rankings are computed in authoritative rules.
+  Private goals and hidden activity stay private until the final reveal; descriptive
+  awards do not introduce hidden scoring in UI code.
+- Reusable first-play evaluation uses six isolated local-model sessions and scoped
+  read-only viewers. Only one seat can read the manual; all player speech follows
+  the normal listening rules. Viewer-to-player messages are neutral allowlisted
+  reactions, not arbitrary spoiler-bearing text. MCP is opt-in and loopback-only.
+  Evaluation uses disclosed turn-stepped time and append-only raw receipts before
+  derived ratings. Synthetic ratings do not establish human enjoyment or rendered
+  usability. See [agent playtests](../AGENT_PLAYTEST.md).
+
+The alternatives were unrestricted model-controlled game state, cloud-only NPCs,
+shared omniscient player/chat context, and paid gameplay advantages. Those are not
+used: they conflict with native authority, explicit local consent, useful blind
+evaluation, or the user's cosmetic-only economy boundary.
+
 ## Consequences
 
 Rules are testable without rendering. Solo and multiplayer share validation and

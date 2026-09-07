@@ -5,9 +5,15 @@ var ambient: AudioStreamPlayer
 var elapsed = 0.0
 var next_note = 4.0
 var tones: Dictionary = {}
+var quitting = false
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	set_process(false)
 	for child in get_children():
 		if child is AudioStreamPlayer:
 			child.stop()
@@ -15,13 +21,32 @@ func _exit_tree() -> void:
 	tones.clear()
 
 
+func request_quit() -> void:
+	if quitting:
+		return
+	quitting = true
+	Controls.stop_rumble()
+	Voice.stop()
+	SoloAi.cancel()
+	NpcSpeech.shutdown()
+	Music.shutdown()
+	shutdown()
+	# Let the audio thread release its active playbacks before engine teardown.
+	await get_tree().create_timer(0.15).timeout
+	get_tree().quit()
+
+
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		set_process(false)
 		return
 	AudioServer.set_bus_volume_db(0, linear_to_db(float(Session.settings.volume)))
+	if AudioServer.get_output_device_list().has(str(Session.settings.audio_output)):
+		AudioServer.output_device = Session.settings.audio_output
 	for kind in ["click", "clue", "knock", "step", "ritual", "chime"]:
 		tones[kind] = _make_sound(kind)
+	for kind in ["thunder", "breeze"]:
+		tones[kind] = load("res://assets/audio/" + kind + ".wav")
 	ambient = AudioStreamPlayer.new()
 	ambient.stream = _make_sound("ambience")
 	ambient.volume_db = -18

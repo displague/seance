@@ -6,10 +6,12 @@ var sequence: Array = []
 var sequence_label: Label
 var ballot_status: Label
 var ballot_submitted = false
+var pending_task = ""
 
 
 func _init(owner_ui) -> void:
 	ui = owner_ui
+	Session.command_finished.connect(_task_finished)
 
 
 func task(id: String) -> void:
@@ -70,7 +72,16 @@ func task(id: String) -> void:
 			)
 			body.add_child(UIK.button("Reset the symbols", _reset_sequence))
 		"safe":
-			body.add_child(UIK.label("What year changed everything?", 37, UIK.GOLD, true))
+			body.add_child(UIK.label("The year Edmund's first child was born", 32, UIK.GOLD, true))
+			body.add_child(UIK.paragraph(NpcData.HINTS.safe, 18))
+			var register = Session.view.evidence.birth
+			if register.public or register.holder == Session.local_role:
+				body.add_child(
+					UIK.button(
+						"Read the Nursery Register in your journal",
+						func(): ui.journal.inspect("birth")
+					)
+				)
 			var code = LineEdit.new()
 			code.placeholder_text = "— — — —"
 			code.max_length = 4
@@ -95,8 +106,17 @@ func task(id: String) -> void:
 
 
 func solve(id: String, answer: String) -> void:
+	pending_task = id
 	Session.command("task", {"id": id, "answer": answer})
-	ui.close()
+
+
+func _task_finished(action: String, payload: Dictionary, error: String) -> void:
+	if action != "task" or str(payload.get("id", "")) != pending_task:
+		return
+	var id = pending_task
+	pending_task = ""
+	if error == "" and ui.modal == "task":
+		task(id)
 
 
 func circle() -> void:
@@ -109,11 +129,12 @@ func circle() -> void:
 		return
 	var sitting = view.phase == "seance"
 	var body = ui.dialog(
-		"The veil is open" if sitting else "Return to the circle",
-		"SITTING " + ["I", "II", "III"][view.round - 1],
-		"circle"
+		"The veil is open" if sitting else "Return to the circle", view.phase_info.label, "circle"
 	)
-	var row = UIK.hbox(body, 30)
+	body.add_child(UIK.paragraph(view.phase_info.next, 16, UIK.GOLD))
+	var content = UIK.scroll(body)
+	var row = UIK.hbox(content, 30)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var board_image = TextureRect.new()
 	board_image.texture = load("res://assets/spirit_board.svg")
@@ -195,6 +216,8 @@ func circle() -> void:
 	var buttons = UIK.hbox(body)
 	buttons.add_child(UIK.button("Review evidence", ui.journal.open))
 	buttons.add_child(UIK.button("Open transcript", ui.journal.transcript))
+	if not view.recap.is_empty():
+		buttons.add_child(UIK.button("Last phase's awards", ui.results.recap))
 	if Session.hosting:
 		buttons.add_child(
 			UIK.button("BREAK THE CIRCLE" if sitting else "CONVENE THE SÉANCE", _advance, true)
@@ -258,11 +281,29 @@ func spirit() -> void:
 	row.add_child(targets)
 	row.add_child(UIK.button("Invite possession  ·  40", _target_action.bind("possess", targets)))
 	row.add_child(UIK.button("Speak no evil  ·  25", _target_action.bind("silence", targets)))
+	var weather = UIK.hbox(body)
+	var rooms = OptionButton.new()
+	for room in HauntRules.ROOMS:
+		rooms.add_item(room)
+	weather.add_child(rooms)
+	for action in ["breeze", "weep"]:
+		weather.add_child(
+			UIK.button(
+				("Spirit breeze" if action == "breeze" else "Weeping walls") + " · 20",
+				_weather.bind(action, rooms)
+			)
+		)
+
+
+func _weather(action: String, rooms: OptionButton) -> void:
+	Session.command(action, {"target": rooms.get_item_text(rooms.selected)})
+	ui.close()
 
 
 func judgment() -> void:
 	ballot_submitted = Session.view.votes.get("submitted", false)
 	var body = ui.dialog("What will the living believe?", "THE FINAL TESTAMENT", "judgment")
+	body.add_child(UIK.paragraph(Session.view.phase_info.next, 16, UIK.GOLD))
 	(
 		body
 		. add_child(
@@ -401,85 +442,4 @@ func refresh_ballot() -> void:
 
 
 func results() -> void:
-	var view = Session.view
-	if view.ending.is_empty():
-		return
-	var ending = view.ending
-	var names = {
-		"release": "At last, a little peace.",
-		"bind": "The house keeps its dead.",
-		"banish": "Silence is not forgiveness."
-	}
-	var body = ui.dialog(names[ending.ending], "DAWN  /  THE UNQUIET WILL", "results")
-	ui.close_button.hide()
-	var rows = UIK.hbox(body, 28)
-	rows.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var story = UIK.vbox(rows, 18)
-	story.custom_minimum_size.x = 470
-	story.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	story.add_child(UIK.label("THE STORY YOU LEFT BEHIND", 12, UIK.GOLD))
-	var fate = {
-		"release":
-		"Edmund crossed the threshold. The candles steadied. For the first time in years, the house felt empty.",
-		"bind":
-		"The circle closed around Edmund. Every future owner will be able to call him back. Forever is a very long inheritance.",
-		"banish":
-		"The voice vanished. No one could say whether Edmund found peace, or simply lost the means to ask for it."
-	}
-	story.add_child(UIK.paragraph(fate[ending.ending], 25, UIK.CREAM))
-	story.add_child(UIK.line())
-	story.add_child(
-		UIK.paragraph(CaseData.person(ending.heir).name + " inherited Ashwood Manor.", 22, UIK.GOLD)
-	)
-	var verdict = (
-		"No one was convicted."
-		if ending.culprit == "none"
-		else CaseData.person(ending.culprit).name + " was named the murderer."
-	)
-	story.add_child(UIK.paragraph(verdict, 21, UIK.CREAM))
-	(
-		story
-		. add_child(
-			(
-				UIK
-				. paragraph(
-					"THE TRUTH: Blackwell poisoned the tonic to conceal his theft. Iris was Edmund's firstborn daughter. Whether the circle accepted those facts was up to you.",
-					16
-				)
-			)
-		)
-	)
-	var scores = UIK.vbox(rows, 10)
-	scores.custom_minimum_size.x = 660
-	var top_score = view.scores[0].points
-	for score in view.scores:
-		var card = UIK.panel(
-			scores,
-			Color("25362f") if score.points == top_score else UIK.INK,
-			UIK.GOLD if score.points == top_score else Color("35433c"),
-			14
-		)
-		var row = UIK.hbox(card, 14)
-		var name = UIK.vbox(row, 4)
-		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name.add_child(
-			UIK.label(
-				(
-					CaseData.person(score.role).name
-					+ ("  ·  YOU" if score.role == Session.local_role else "")
-				),
-				24,
-				UIK.CREAM,
-				true
-			)
-		)
-		var checked = []
-		for i in range(3):
-			checked.append(("✓ " if score.goals[i] else "— ") + str([2, 3, 5][i]))
-		name.add_child(
-			UIK.label(
-				" / ".join(checked) + "   ·   PREPARATIONS +" + str(score.bonus), 12, UIK.MUTED
-			)
-		)
-		row.add_child(UIK.label(str(score.points) + " pts", 30, UIK.GOLD, true))
-	body.add_child(UIK.button("LEAVE ASHWOOD     →", ui.show_menu, true))
+	ui.results.summary()

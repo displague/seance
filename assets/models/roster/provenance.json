@@ -1,0 +1,107 @@
+{
+  "profile": "roster_v2",
+  "characters": [
+    {
+      "role": "ghost",
+      "model": "meshy-7",
+      "prompt": "An elderly wealthy English occultist, gaunt angular face, swept silver hair, neat pointed beard, embroidered midnight blue velvet smoking jacket with gold celestial motifs, antique waistcoat, narrow charcoal trousers and polished boots. Regal tragic bearing. Solid living human, not transparent. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 66708,
+      "height_meters": 1.83,
+      "paid_tasks": {
+        "preview": "01a0782d-7f4c-731e-a73f-c0e9a65a3039",
+        "refine": "01a0782f-3aae-7289-9640-7504d663edfe",
+        "rig": "01a07831-2d7b-73f7-a4f1-adba66f76ae7"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "3ad9baeb70639aabfe10950477cb20f34a97682330c8b7b86b690b55906b77de",
+        "locomotion.res": "babdf44f572bc90c34b693ef4ae820d60cbf6f80cf4fa14486b8b6d6f671ba84"
+      }
+    },
+    {
+      "role": "medium",
+      "model": "meshy-7",
+      "prompt": "A 36 year old female spiritualist, thoughtful pale oval face, dark auburn hair in an elaborate braided bun. Fitted deep petrol teal high-neck brocade jacket, embroidered silver moons, lace cuffs, ivory blouse, tailored ankle length divided riding skirt with clearly separated trouser legs and black boots. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 66203,
+      "height_meters": 1.7,
+      "paid_tasks": {
+        "preview": "01a0782d-a7d6-7344-a0ef-dbf8cb914762",
+        "refine": "01a0782f-75b0-76e5-8230-646e401d14a6",
+        "rig": "01a07831-68d2-7116-ad75-39b64485877a"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "128eacbcf783c7f92f6deebb4b68c177d86e033799bb57f3ce828de053226934",
+        "locomotion.res": "3d8b46fe4a809cb2214fbde0eacdd9fa3f63a2f3a80424c7b8c6420243eb28cc"
+      }
+    },
+    {
+      "role": "heir",
+      "model": "meshy-7",
+      "prompt": "A handsome 28 year old male aristocratic heir, olive complexion, slick dark side-parted hair, clean shaven, confident sharp face. Elegant oxblood and black three piece pinstripe suit, double breasted waistcoat, ivory silk cravat, small gold watch chain across waistcoat, narrow tailored trousers, polished oxford shoes. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 65950,
+      "height_meters": 1.81,
+      "paid_tasks": {
+        "preview": "01a0782d-d081-73c7-9c84-2991a42ef5ea",
+        "refine": "01a0782f-65e1-76fc-81c6-365a8360fd11",
+        "rig": "01a07831-58ca-7114-aa20-de6206ca64eb"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "1d3b8c80b2d589739a3889c542d8120c4972860ec5558e2c3cf29680e87f6e6f",
+        "locomotion.res": "134553c99f718a7ccfd6cf54cc62cebaa3fba042beba01dc1a0854b3fa7aa81c"
+      }
+    },
+    {
+      "role": "widow",
+      "model": "meshy-7",
+      "prompt": "A dignified 48 year old woman, warm brown complexion, high cheekbones, black hair in sculpted updo. Ornate emerald and black brocade mourning gown, fitted high collar bodice, gold botanical embroidery, structured split overskirt ending at knees over separate black fitted trouser legs, lace cuffs, heeled boots. Rich couture fabric, no trailing cloth. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 67539,
+      "height_meters": 1.74,
+      "paid_tasks": {
+        "preview": "01a07828-9cf8-76fa-bed4-f05faed46d2c",
+        "refine": "01a0782a-3218-74ff-a9c0-4f1ae4340f5e",
+        "rig": "01a0782b-b006-77bd-89ee-f7e5107d97d7"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "e6bd95fcfc0ad500f37e4901f8277398a46207c659239151abf1bf4dbe3e5ef7",
+        "locomotion.res": "0f56fe47a913b56c48af0ff767a39642401f361406d20f14c7c7baa2e268246e"
+      }
+    },
+    {
+      "role": "doctor",
+      "model": "meshy-7",
+      "prompt": "A stern 57 year old male Victorian physician, long narrow weathered face, receding salt and pepper hair, trimmed grey moustache. Detailed charcoal wool frock jacket ending at hips, burgundy jacquard waistcoat, brass buttons, ivory high collar shirt, black tie, fitted dark trousers, worn leather ankle boots. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 66384,
+      "height_meters": 1.78,
+      "paid_tasks": {
+        "preview": "01a0782d-f93a-778e-a070-9a862fc24e2c",
+        "refine": "01a0782f-7a66-7451-a4ea-331b4c694c90",
+        "rig": "01a07831-abe7-752d-a2c9-87f3b7113d45"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "9bbfcd7c74ffb02d123c7e745e7cd641b1e77d01ecfb78f7c92412af4909478d",
+        "locomotion.res": "04d08d325c1d242cc676105c6b13e8e415e5927abc41d0b0d9175c54c5b8a75f"
+      }
+    },
+    {
+      "role": "keeper",
+      "model": "meshy-7",
+      "prompt": "A capable 32 year old female housekeeper, freckled fair skin, round kind face, copper red hair in a neat low bun. Navy blue fitted wool working dress ending above knees with ivory linen apron and lace collar, separate dark stocking covered legs, practical worn leather boots. Fine woven fabric and seams. Full body, strict T pose, open empty hands away from torso, feet apart. Realistic adult proportions, detailed Gothic period game character. No props, no base, no scenery, no cape.",
+      "triangles_before_rig": 66001,
+      "height_meters": 1.65,
+      "paid_tasks": {
+        "preview": "01a0782e-21b0-7792-ac57-27db3e116606",
+        "refine": "01a0782f-ef7a-757e-8037-38789c07ac7a",
+        "rig": "01a07831-a919-727e-8584-a55300ce2c3c"
+      },
+      "estimated_credits": 40,
+      "sha256": {
+        "character.glb": "0823147637a2eaf8bd49d885f0999edee983d02385a08b1aa8c75b422d358ba5",
+        "locomotion.res": "c5696df7d6663611a33df0b8149e5f0940efb7df541815d6887c341526ec4627"
+      }
+    }
+  ]
+}

@@ -4,19 +4,34 @@ extends RefCounted
 ## No runtime Python, animation service, or procedural limb replacement.
 
 
-static func attach(instance: Node3D, model: String) -> AnimationPlayer:
+static func attach(instance: Node3D, model: String, use_baked: bool = true) -> AnimationPlayer:
 	var players = instance.find_children("*", "AnimationPlayer", true, false)
 	if players.is_empty():
 		return null
 	var player: AnimationPlayer = players[0]
+	var baked = "res://assets/models/" + model + "/locomotion.res"
+	if use_baked and ResourceLoader.exists(baked):
+		player.add_animation_library("seance", load(baked))
+		player.play("seance/idle")
+		player.advance(0)
+		return player
+	if player.get_animation_list().is_empty():
+		return null
 	var library = AnimationLibrary.new()
 	var idle: Animation = player.get_animation(player.get_animation_list()[0]).duplicate(true)
 	for kind in ["walking", "running"]:
-		var scene: PackedScene = load("res://assets/models/" + model + "/" + kind + ".glb")
+		var source_path = "res://assets/models/" + model + "/" + kind + ".glb"
+		if not ResourceLoader.exists(source_path):
+			return null
+		var scene: PackedScene = load(source_path)
+		if scene == null:
+			return null
 		var source = scene.instantiate()
-		var source_player: AnimationPlayer = (
-			source.find_children("*", "AnimationPlayer", true, false)[0]
-		)
+		var source_players = source.find_children("*", "AnimationPlayer", true, false)
+		if source_players.is_empty() or source_players[0].get_animation_list().is_empty():
+			source.free()
+			return null
+		var source_player: AnimationPlayer = source_players[0]
 		var clip: Animation = (
 			source_player.get_animation(source_player.get_animation_list()[0]).duplicate(true)
 		)

@@ -17,7 +17,10 @@ func expect(condition: bool, message: String) -> void:
 
 func run() -> void:
 	test_splash()
-	for model in ["medium", "physician"]:
+	var models = ["medium", "physician"]
+	for role in CaseData.ROLES:
+		models.append("roster/" + role)
+	for model in models:
 		var path = "res://assets/models/" + model + "/character.glb"
 		expect(ResourceLoader.exists(path), "rig exists " + model)
 		var instance = load(path).instantiate()

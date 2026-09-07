@@ -9,7 +9,11 @@ var humans: Array = []
 func reset(human_roles: Array = ["medium"]) -> void:
 	humans = human_roles.duplicate()
 	state = {
+		"npc": NpcRules.initial(),
+		"interactive_guests": false,
+		"npc_routes": {},
 		"phase": "investigation",
+		"haunt": HauntRules.initial(),
 		"round": 1,
 		"remaining": 300.0,
 		"evidence": {},
@@ -42,6 +46,7 @@ func reset(human_roles: Array = ["medium"]) -> void:
 		state.positions[role] = CaseData.spawn_at(role)
 		state.private_log[role] = []
 		state.task_points[role] = 0
+	RoundSummary.initialize(state)
 	log_event(
 		"The doors are locked. Dawn will execute the will. What happens before it belongs to you."
 	)
@@ -63,6 +68,9 @@ func tick(delta: float) -> bool:
 	if state.is_empty() or state.phase == "ended":
 		return false
 	state.energy = minf(100, state.energy + delta * 0.7)
+	HauntRules.tick(state, delta)
+	if state.interactive_guests:
+		NpcDirector.tick(self, delta)
 	state.possession_time = maxf(0, state.possession_time - delta)
 	state.silence_time = maxf(0, state.silence_time - delta)
 	if state.possession_time <= 0:
@@ -95,6 +103,17 @@ func act(role: String, action: String, payload: Dictionary = {}) -> String:
 	var id = str(payload.get("id", ""))
 	var target = str(payload.get("target", ""))
 	match action:
+		"breeze", "weep", "calm":
+			var error = HauntRules.act(state, role, action, target)
+			if error != "":
+				return error
+			log_event(
+				(
+					("The cold recedes from " if action == "calm" else "A spirit breeze chills ")
+					+ target
+					+ "."
+				)
+			)
 		"collect":
 			if role == "ghost":
 				return "The dead cannot carry objects. Guide the living."
@@ -246,6 +265,8 @@ func act(role: String, action: String, payload: Dictionary = {}) -> String:
 				resolve()
 		"talk":
 			return bot_conversation(role, target, str(payload.get("topic", "death")))
+		"interact":
+			return NpcRules.interact(self, role, target, str(payload.get("choice", "")))
 		"question":
 			if role != "medium" or state.phase != "seance":
 				return "Only the Medium can question Edmund during a séance."
@@ -264,58 +285,12 @@ func act(role: String, action: String, payload: Dictionary = {}) -> String:
 			private_event(role, "Edmund, beyond the veil: “" + words.get(id, words.death) + "”")
 		_:
 			return "That action is not available."
+	RoundSummary.record(state, role, action, id)
 	return ""
 
 
 func bot_conversation(role: String, target: String, topic: String) -> String:
-	if not CaseData.ROLES.has(target) or target == role or target == "ghost":
-		return "There is no one to question."
-	if humans.has(target):
-		return "This guest is a human player. Speak to them using voice or the transcript."
-	var lines = {
-		"medium":
-		{
-			"death": "The spirit remembers a bitter taste. Memories are not yet evidence.",
-			"inheritance": "Ask who the will calls firstborn. It never says Julian.",
-			"ritual": "Binding is a prison. Prepare two instruments and I can open a kinder door."
-		},
-		"heir":
-		{
-			"death": "Lenore brought the drink. I am only telling you what we all saw.",
-			"inheritance":
-			"My father's seal belongs to me. Bring me the ring, and we may find some common ground.",
-			"ritual":
-			"We should bind him. Think of the questions a family could ask over a lifetime."
-		},
-		"widow":
-		{
-			"death": "I carried the glass. Silas prepared it. Those are very different things.",
-			"inheritance":
-			"Let Iris have the manor. I want the garden gate open, and a life beyond it.",
-			"ritual": "Please don't make him stay here. Don't make any of us stay."
-		},
-		"doctor":
-		{
-			"death":
-			"Edmund's heart was failing. His wife's affairs certainly did not help. Have you read her letter?",
-			"inheritance":
-			"I witnessed the will. A difficult night; one cannot be certain he was of sound mind.",
-			"ritual": "Banish it. A grieving house needs silence, not an endless interrogation."
-		},
-		"keeper":
-		{
-			"death":
-			"The doctor left at twenty past eleven. He said midnight at the inquest. I know what I heard.",
-			"inheritance":
-			"There is a name in the nursery register. I spent thirty years dusting that book without opening it.",
-			"ritual": "The dead have had enough of closed doors. I think we ought to open one."
-		}
-	}
-	if not ["death", "inheritance", "ritual"].has(topic):
-		return "Choose a subject."
-	private_event(role, CaseData.person(target).name + ": “" + lines[target][topic] + "”")
-	state.discussed[role + ":" + target + ":" + topic] = true
-	return ""
+	return NpcRules.interact(self, role, target, "topic:" + topic)
 
 
 func preparations() -> int:
@@ -346,6 +321,8 @@ func can_hear(speaker: String, listener: String) -> bool:
 
 
 func advance() -> void:
+	if state.phase in ["investigation", "seance"]:
+		RoundSummary.capture(self)
 	match state.phase:
 		"investigation":
 			state.phase = "seance"
@@ -383,6 +360,7 @@ func bot_sitting() -> void:
 	if not humans.has("ghost"):
 		var words = ["BETRAYAL", "BLOOD", "RELEASE"]
 		state.manifest += 1
+		RoundSummary.note(state, "ghost", "signs")
 		state.manifest_word = words[state.round - 1]
 		log_event("Three knocks. The board spells: " + state.manifest_word + ".")
 		private_event(
@@ -414,17 +392,21 @@ func bot_sitting() -> void:
 		var id = assignments[role]
 		var clue = state.evidence[id]
 		if clue.holder == "" and not clue.destroyed:
-			clue.holder = role
+			if not state.interactive_guests:
+				clue.holder = role
 		if clue.holder == role and not clue.public and not clue.destroyed and role != "doctor":
 			clue.public = true
+			RoundSummary.note(state, role, "revealed")
 			log_event(CaseData.person(role).name + " revealed “" + CaseData.CLUES[id].name + "”.")
 		if role == "doctor" and clue.holder == role and not clue.public and state.round == 3:
 			clue.destroyed = true
-	if state.round >= 2:
+			RoundSummary.note(state, role, "destroyed")
+	if state.round >= 2 and not state.interactive_guests:
 		for id in ["radio", "safe"]:
 			if state.tasks[id] == "" and not humans.has("medium"):
 				state.tasks[id] = "medium"
 				state.task_points.medium += 1
+				RoundSummary.note(state, "medium", "prepared")
 				log_event("Vivienne prepared the " + CaseData.TASKS[id].name + ".")
 
 
@@ -445,13 +427,22 @@ func resolve() -> void:
 	for role in CaseData.ROLES:
 		if state.votes.has(role):
 			continue
-		var culprit = "doctor" if proven else "none"
+		var persuaded = (
+			NpcRules.knows(self, role, "vial")
+			and (
+				NpcRules.knows(self, role, "ledger")
+				or NpcRules.knows(self, role, "clock")
+				or NpcRules.knows(self, role, "flowers")
+			)
+		)
+		var culprit = "doctor" if proven or persuaded else "none"
 		var heir = "keeper" if public_clue("birth") and public_clue("will") else "heir"
 		var ending = "release" if preparations() >= 2 else "banish"
 		if not humans.has(role):
 			if role == "doctor":
 				culprit = "widow"
 				ending = "banish"
+				heir = state.npc.pledges.get(role, heir)
 			if role == "heir":
 				heir = "heir"
 				ending = "bind"
@@ -494,6 +485,7 @@ func resolve() -> void:
 			{"role": role, "points": points + bonus, "goals": goals, "bonus": bonus}
 		)
 	state.scores.sort_custom(func(a, b): return a.points > b.points)
+	RoundSummary.final(self)
 	log_event("The will is sealed. Ashwood remembers what the circle chose to believe.")
 
 
@@ -527,8 +519,13 @@ func completed_goals(role: String) -> Array:
 
 func view_for(role: String) -> Dictionary:
 	var view = state.duplicate(true)
+	view["npc"] = NpcRules.view_for(self, role)
+	view.erase("npc_routes")
 	view.erase("private_log")
 	view.erase("discussed")
+	view.erase("activity")
+	view.erase("activity_baseline")
+	view["phase_info"] = RoundSummary.phase_info(state)
 	view["messages"] = state.private_log.get(role, []).duplicate()
 	view["role"] = role
 	view["humans"] = humans.duplicate()

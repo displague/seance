@@ -17,8 +17,13 @@ boot_splash/minimum_display_time=800
 
 [autoload]
 Session="*res://scripts/session.gd"
+Controls="*res://scripts/controls.gd"
+Wardrobe="*res://scripts/wardrobe.gd"
 Sound="*res://scripts/sound.gd"
 Voice="*res://scripts/voice.gd"
+Music="*res://scripts/music.gd"
+NpcSpeech="*res://scripts/npc_speech.gd"
+SoloAi="*res://scripts/solo_ai.gd"
 
 [display]
 window/size/viewport_width=1600

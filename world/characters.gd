@@ -1,6 +1,7 @@
 class_name SeanceCharacters
 extends Node3D
-## Presentation only. Human positions come from the host; bots follow stage marks.
+## Presentation only. Host positions drive humans and active solo guests;
+## authored rehearsal guests use stage marks.
 
 var figures: Dictionary = {}
 var props: ManorProps
@@ -8,6 +9,7 @@ var time = 0.0
 var ghost_material: ShaderMaterial
 var animations: Dictionary = {}
 var last_stage = ""
+var equipped: Dictionary = {}
 
 
 func _ready() -> void:
@@ -49,23 +51,24 @@ func _ready() -> void:
 		figures[role] = {
 			"root": figure, "target": figure.position, "rig": rig, "title": title, "area": area
 		}
+		if role == "ghost":
+			var glow = OmniLight3D.new()
+			glow.name = "SpiritGlow"
+			glow.position.y = 1.2
+			glow.light_color = Color("86dccf")
+			glow.light_energy = 1.6
+			glow.omni_range = 5
+			figure.add_child(glow)
 
 
 func _load_character(role: String, parent: Node3D) -> Node3D:
-	var model = "medium" if role in ["medium", "widow", "keeper"] else "physician"
-	var path = "res://assets/models/" + model + "/character.glb"
-	if not ResourceLoader.exists(path):
+	var choice = AppearanceData.normalize(role, equipped.get(role, {}))
+	equipped[role] = choice
+	var instance = AvatarFactory.create(role, choice)
+	if instance == null:
 		return null
-	var scene = load(path) as PackedScene
-	if not scene:
-		return null
-	var instance = scene.instantiate() as Node3D
 	parent.add_child(instance)
-	animations[role] = CharacterMotion.attach(instance, model)
-	instance.rotation.y = PI
-	if role == "ghost":
-		for node in instance.find_children("*", "MeshInstance3D", true, false):
-			node.material_override = ghost_material
+	animations[role] = AvatarFactory.finish(instance, role, choice)
 	return instance
 
 
@@ -107,13 +110,19 @@ func sync(view: Dictionary) -> void:
 	last_stage = stage
 	for role in figures:
 		var figure = figures[role]
+		var appearance = AppearanceData.normalize(role, view.get("appearances", {}).get(role, {}))
+		if appearance != equipped.get(role, {}):
+			equipped[role] = appearance
+			if is_instance_valid(figure.rig):
+				figure.rig.free()
+			figure.rig = _load_character(role, figure.root)
 		figure.root.visible = not Session.active or role != Session.local_role
 		figure.area.collision_layer = 2 if figure.root.visible else 0
 		figure.title.visible = Session.active
 		if view.is_empty():
 			continue
 		var human = view.get("humans", []).has(role)
-		if human:
+		if human or view.get("interactive_guests", false):
 			figure.target = view.positions.get(role, CaseData.SEATS[role])
 		elif view.phase in ["seance", "judgment", "ended"]:
 			figure.target = CaseData.SEATS[role] * 1.22

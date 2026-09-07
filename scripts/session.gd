@@ -6,6 +6,7 @@ signal notice(text: String)
 signal started
 signal lobby_changed
 signal connection_lost
+signal command_finished(action: String, payload: Dictionary, error: String)
 
 const PORT = 27877
 var rules: GameRules
@@ -29,7 +30,14 @@ var settings = {
 	"fullscreen": false,
 	"quality": 1,
 	"subtitles": true,
-	"motion": true
+	"motion": true,
+	"music_volume": 0.45,
+	"pad_deadzone": 0.2,
+	"pad_sensitivity": 2.2,
+	"rumble": true,
+	"reduced_flashes": false,
+	"blood_effects": false,
+	"audio_output": "Default"
 }
 
 
@@ -51,14 +59,22 @@ func save_settings() -> void:
 	cfg.save("user://preferences.cfg")
 
 
-func solo(role: String) -> void:
+func solo(role: String, use_ai: bool = false) -> void:
+	var speech_in = NpcSpeech.voice_in
+	var speech_out = NpcSpeech.voice_out
 	leave()
 	local_role = role if CaseData.ROLES.has(role) else "medium"
 	rules = GameRules.new()
 	rules.reset([local_role])
+	rules.state.interactive_guests = use_ai
+	_set_appearances()
 	active = true
 	hosting = true
 	view = rules.view_for(local_role)
+	SoloAi.set_enabled(use_ai)
+	if use_ai:
+		NpcSpeech.set_voice_in(speech_in)
+		NpcSpeech.set_voice_out(speech_out)
 	started.emit()
 	changed.emit()
 
@@ -77,7 +93,14 @@ func host(role: String, guest_name: String) -> Error:
 	player_name = guest_name.strip_edges().left(24)
 	online = true
 	hosting = true
-	lobby = {1: {"name": player_name, "role": local_role}}
+	lobby = {
+		1:
+		{
+			"name": player_name,
+			"role": local_role,
+			"appearance": AppearanceData.normalize(local_role, Wardrobe.choices.get(local_role, {}))
+		}
+	}
 	lobby_changed.emit()
 	return OK
 
@@ -98,7 +121,7 @@ func join_room(address: String, role: String, guest_name: String) -> Error:
 
 
 func _connected() -> void:
-	_register.rpc_id(1, player_name, preferred_role)
+	_register.rpc_id(1, player_name, preferred_role, Wardrobe.choices)
 
 
 func _failed() -> void:
@@ -114,11 +137,13 @@ func _disconnected() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable", 0)
-func _register(guest_name: String, wanted: String) -> void:
+func _register(guest_name: String, wanted: String, appearances: Dictionary = {}) -> void:
 	if not hosting or not online:
 		return
 	var sender = multiplayer.get_remote_sender_id()
 	if active or lobby.has(sender) or lobby.size() >= 6:
+		return
+	if appearances.size() > 6 or var_to_bytes(appearances).size() > 2048:
 		return
 	var taken = []
 	for guest in lobby.values():
@@ -129,7 +154,11 @@ func _register(guest_name: String, wanted: String) -> void:
 			if not taken.has(role):
 				selected = role
 				break
-	lobby[sender] = {"name": guest_name.strip_edges().left(24), "role": selected}
+	lobby[sender] = {
+		"name": guest_name.strip_edges().left(24),
+		"role": selected,
+		"appearance": AppearanceData.normalize(selected, appearances.get(selected, {}))
+	}
 	_publish_lobby()
 
 
@@ -156,6 +185,7 @@ func start_host_game() -> void:
 		human_roles.append(guest.role)
 	rules = GameRules.new()
 	rules.reset(human_roles)
+	_set_appearances()
 	active = true
 	view = rules.view_for(local_role)
 	for peer_id in lobby:
@@ -171,6 +201,18 @@ func _begin(snapshot: Dictionary) -> void:
 	active = true
 	started.emit()
 	changed.emit()
+
+
+func _set_appearances() -> void:
+	rules.state["appearances"] = AppearanceData.preferences({})
+	rules.state["sitting_id"] = "%s-%s" % [Time.get_unix_time_from_system(), Time.get_ticks_usec()]
+	rules.state.appearances[local_role] = AppearanceData.normalize(
+		local_role, Wardrobe.choices.get(local_role, {})
+	)
+	for guest in lobby.values():
+		rules.state.appearances[guest.role] = AppearanceData.normalize(
+			guest.role, guest.get("appearance", {})
+		)
 
 
 func _peer_left(peer_id: int) -> void:
@@ -194,6 +236,8 @@ func _peer_left(peer_id: int) -> void:
 
 func leave() -> void:
 	Voice.stop()
+	SoloAi.cancel()
+	NpcSpeech.shutdown()
 	if multiplayer.multiplayer_peer:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
@@ -226,6 +270,15 @@ func _apply(role: String, action: String, payload: Dictionary, peer_id: int = 1)
 		else:
 			_feedback.rpc_id(peer_id, error)
 	publish()
+	if peer_id == 1:
+		command_finished.emit(action, payload, error)
+	else:
+		_command_finished.rpc_id(peer_id, action, payload, error)
+
+
+@rpc("authority", "call_remote", "reliable", 0)
+func _command_finished(action: String, payload: Dictionary, error: String) -> void:
+	command_finished.emit(action, payload, error)
 
 
 @rpc("any_peer", "call_remote", "reliable", 0)

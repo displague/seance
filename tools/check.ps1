@@ -36,7 +36,8 @@ function Invoke-EngineCheck([string]$Name, [string[]]$TaskArguments, [string]$Ma
     $process = Start-Process -FilePath $Engine -ArgumentList $engineArgs -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     try {
-        if (-not $process.WaitForExit(45000)) {
+        $timeout = if ($Name -eq 'import') { 300000 } else { 60000 }
+        if (-not $process.WaitForExit($timeout)) {
             $process.Kill()
             throw "Engine $Name timed out. Inspect artifacts/check-$Name.*"
         }
@@ -59,10 +60,19 @@ function Invoke-EngineCheck([string]$Name, [string[]]$TaskArguments, [string]$Ma
 Invoke-EngineCheck 'import' @('--headless', '--editor', '--import', '--quit')
 Invoke-EngineCheck 'compile' @('--headless', '--script', 'res://tests/compile_test.gd') 'COMPILE: PASS'
 Invoke-EngineCheck 'rules' @('--headless', '--script', 'res://tests/rules_test.gd') 'RULES: .*0 failures'
+Invoke-EngineCheck 'npc' @('--headless', '--script', 'res://tests/npc_test.gd') 'NPC: .*0 failures'
+Invoke-EngineCheck 'round-summary' @('--headless', '--script', 'res://tests/round_summary_test.gd') 'ROUND SUMMARY: .*0 failures'
+Invoke-EngineCheck 'playtest-bridge' @('--headless', '--script', 'res://tests/playtest_bridge_test.gd') 'PLAYTEST BRIDGE: .*0 failures'
+Invoke-EngineCheck 'agent-harness' @('--headless', '--script', 'res://tests/agent_harness_test.gd') 'AGENT HARNESS: .*0 failures'
 Invoke-EngineCheck 'assets' @('--headless', '--script', 'res://tests/assets_test.gd') 'ASSETS: .*0 failures'
 Invoke-EngineCheck 'runtime' @('--headless', '--script', 'res://tests/runtime_test.gd', '--', '--qa') 'RUNTIME: .*0 failures'
+Invoke-EngineCheck 'features' @('--headless', '--script', 'res://tests/features_test.gd', '--', '--qa') 'FEATURES: .*0 failures'
+Invoke-EngineCheck 'social' @('--headless', '--script', 'res://tests/social_runtime_test.gd', '--', '--qa') 'SOCIAL UI: .*0 failures'
 if (-not $SkipNetwork) { & (Join-Path $PSScriptRoot 'test-network.ps1') -Engine $Engine }
 if ($Rendered) {
+    Invoke-EngineCheck 'rendered-round-summary' @('--script', 'res://tests/round_summary_test.gd', '--', '--qa') 'ROUND SUMMARY: .*0 failures'
+    Invoke-EngineCheck 'rendered-social' @('--script', 'res://tests/social_runtime_test.gd', '--', '--qa') 'SOCIAL UI: .*0 failures'
     Invoke-EngineCheck 'rendered' @('--script', 'res://tests/runtime_test.gd', '--', '--qa') 'RUNTIME: .*0 failures'
+    Invoke-EngineCheck 'rendered-features' @('--script', 'res://tests/features_test.gd', '--', '--qa') 'FEATURES: .*0 failures'
 }
 Write-Output 'CHECK: PASS'

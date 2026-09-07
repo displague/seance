@@ -22,6 +22,17 @@ Choose **Enter Ashwood → Medium → Begin the rehearsal** for a first visit. R
 your private dossier, then step inside. Explore before convening the first sitting;
 the house's scripted guests bring their own evidence to the table.
 
+Choose **Solo with local AI…** for free-text conversation and physically investigating
+guests. LM Studio uses `http://127.0.0.1:1234/v1`; click **Check models**, select
+LFM2.5-2.6B or Granite 4.1-3B, then choose your character. Both were exercised against
+the real local server. NPCs have distinct histories and motives: show evidence,
+request disclosures, bargain for objects, or arrange a transfer to another guest.
+Open-ended dialogue is fallible and labelled separately from recovered evidence.
+
+Optional native voices and reviewed push-to-talk transcripts are described in
+[solo AI setup and limits](docs/SOLO_AI.md). No microphone opens automatically.
+The normal rehearsal still works with no model server or speech helper installed.
+
 The Windows development bundle contains the full Godot runtime/editor binary and
 a compiled PCK. It is unsigned and larger than a release-template build. No engine
 installation is needed for that bundle. It is not a retail installer.
@@ -33,7 +44,7 @@ installation is needed for that bundle. It is not a retail installer.
 | WASD / mouse | Move / look |
 | Shift | Move faster |
 | E | Inspect the object or speak to the guest under the crosshair |
-| F | Toggle lantern |
+| F | Toggle lantern (living only; the Ghost has its own glow) |
 | J | Journal, evidence, inheritance, private motives, estate guide |
 | C | Séance circle / final testament |
 | T | Text conversation with server-owned listening rules |
@@ -45,6 +56,27 @@ Solo pauses while reading a panel. Multiplayer continues while menus are open.
 Mouse sensitivity, master volume, fullscreen, and camera motion are configurable.
 Preferences are saved locally; the current case is **not saved**.
 
+Xbox, PlayStation and Stadia Bluetooth controllers use Godot's standard SDL mappings:
+left/right stick move/look, south button interact, west journal, north circle, Start
+pause, B/Circle back. D-pad up opens spirit powers, down transcript, left opt-in mic,
+right lantern. Hold LB/L1 to talk; press left stick to sprint. Settings include stick
+deadzone, look speed and rumble. A Google Stadia Controller was detected with a known
+SDL mapping during final validation; gameplay tests used synthetic events, not a
+human-operated pad. Bluetooth transport and felt rumble still need a hands-on check.
+Controller/headset audio can be selected
+only if Windows exposes an output device; this switches the entire game mix.
+
+Choose **Wardrobe** on the role screen to save each character's preferred look.
+Your equipped model is replicated to other players and used in guest portraits.
+Six distinct Ashwood characters are free; Medium/Physician also have a Heritage look.
+Silver brooches are free; a gold brooch unlocks with gameplay-earned Remembrance.
+No paid store is live. See [cosmetic economy boundaries](docs/COSMETICS.md).
+
+The ghost can spend 20 energy on a room's spirit breeze or weeping walls. Lamps go
+out temporarily; a living guest can inspect the affected wall to calm the cold spot.
+Blood/slime and reduced-flash settings are free. The original adaptive instrumental
+score has a separate volume slider and ducks under live speech.
+
 ## What's playable
 
 - Six selectable roles: Ghost, Medium, eldest heir, widow, physician, housekeeper.
@@ -55,12 +87,15 @@ Preferences are saved locally; the current case is **not saved**.
 - Three investigation/séance rounds, followed by a final three-part ballot.
 - Separate culprit, beneficiary, and spirit-fate outcomes; release, binding, banishment.
 - Individual 2/3/5-point objectives plus up to three preparation points.
-- A complete solo rehearsal with five **authored, scripted guests**, not conversational AI.
+- Explicit phase recaps with six-player public progress and earned action awards;
+  persistent final rankings with full objective breakdowns. No automatic new game.
+- An authored solo rehearsal, plus optional local conversational AI with five goal-driven guests.
+- Private follow-up conversations, evidence-based disclosures and voting, and explicit-consent trades.
 - Private ENet multiplayer with up to six human players; empty seats are scripted.
 - Opt-in push-to-talk, ghost low-pass/echo/reverb, and permission-matched text.
 - Sixty-second possession that opens a private channel without taking movement control.
 - Temporary Speak No Evil, spirit-board signs, light changes, and spirit energy.
-- Original procedural environment, sounds, UI, portrait, and two generated rigged character bases.
+- Original procedural environment, adaptive score and effects; six distinct generated characters plus two Heritage looks.
 
 ## Play together
 
@@ -92,6 +127,8 @@ Keep all source files below 1,000 lines. GDScript is formatted/linted with
 .\tools\check.ps1
 .\tools\check.ps1 -Rendered
 .\tools\test-network.ps1 -Address 127.0.0.1
+.\tools\test-six-seats.ps1
+.\tools\test-agent-party.ps1 -Games 2 -Viewers 2 -Model granite-4.1-3b
 .\tools\build.ps1
 ```
 
@@ -100,6 +137,12 @@ development requirements can be installed into a separate venv; they are not nee
 to play. `-Rendered` exercises the real scene and saves viewport images in
 `artifacts/qa_*.png`. The network test launches three independent processes and uses
 synthetic PCM; it does not enable microphone capture. Logs are under `artifacts`.
+The separate six-seat test runs six real local processes with scripted goal policies;
+it is not a human playtest or six independently reasoning language models. Explicit
+live-model/voice tests are documented separately and are not part of the offline gate.
+The [independent agent trial](docs/AGENT_PLAYTEST.md) uses six isolated model sessions,
+one teaching player and non-spoiling viewer reactions. Unlike the six-process script,
+its players choose their own actions. It is a text-adapter experiment, not human QA.
 
 The tested compiler harness is `tests/compile_test.gd`. Avoid
 `--check-only --script res://ui/...` with this local engine: that mode caused native
@@ -119,13 +162,19 @@ raw service responses, and credentials are intentionally excluded from Git.
 ## Current boundaries
 
 This is one fixed case, not a procedural mystery generator. Bots use authored
-testimony and predetermined voting heuristics; they cannot negotiate freely and
-not every motive is achievable in solo rehearsal. Two character bases are shared
-across six roles, with basic locomotion and a spectral override, not six finished
-cinematic performances. Some generated clothing and hands need art cleanup.
+knowledge, bounded bargaining rules and evidence-sensitive voting heuristics. Local
+AI adds conversational interpretation, not an unrestricted planner. Active guests
+walk authored routes; they cannot improvise arbitrary plans, lie convincingly about
+every secret, or complete every motive in every solo role. Six distinct models have
+basic locomotion, not cinematic performances or facial animation. Some generated
+clothing and hands need art cleanup.
 
 There is no streamer spectator mix, Steam integration, save/rejoin, rebinding,
-localization, gamepad support, or production anti-cheat. Actual microphone quality,
+localization, Twitch/YouTube integration, audience voting, operable doors, secret passages,
+or production anti-cheat. See [six-seat findings and next gameplay work](docs/PLAYTEST.md).
+An optional loopback-only developer MCP host is available for controlled experiments;
+it is disabled during normal gameplay.
+Actual microphone quality,
 two-computer LAN play, WAN latency, and minimum-spec hardware remain unverified.
 
 The packed case contains authored secrets, so extraction of game files can spoil

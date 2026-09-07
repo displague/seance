@@ -28,3 +28,8 @@ never as a runtime dependency. Import `project.godot`, or run `PLAY.cmd` on Wind
 - Ghost voice and text use the same server-owned listening rules.
 - Use original assets, record provenance in `docs/ASSETS.md`, and keep paid task IDs.
 - Add narrowly scoped skills only for repeatable project workflows that need them.
+
+## Repeatable workflows
+
+- `.agents/skills/seance-first-playtest/SKILL.md`: isolated model-player/viewer
+  first-experience trials and receipt audits. Keep these distinct from scripted QA.

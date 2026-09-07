@@ -2,6 +2,7 @@ class_name CaseData
 extends RefCounted
 
 const TITLE = "The Ashwood Inheritance"
+const FINAL_TRUTH = "Blackwell poisoned the tonic to conceal his theft. Iris was Edmund's firstborn daughter. Whether the circle accepted those facts was up to you."
 const ROLES = ["medium", "heir", "widow", "doctor", "keeper", "ghost"]
 const PEOPLE = {
 	"medium":

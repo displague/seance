@@ -1,5 +1,6 @@
 .godot/
 tools/godot/
+tools/ai/
 build/
 artifacts/
 *.log
@@ -8,3 +9,7 @@ artifacts/
 *.tmp
 __pycache__/
 meshy_output/
+assets/models/roster/*/walking.glb*
+assets/models/roster/*/running.glb*
+assets/models/roster/*/walking_texture_*.png*
+assets/models/roster/*/running_texture_*.png*

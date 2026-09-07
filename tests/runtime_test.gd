@@ -152,6 +152,7 @@ func run() -> void:
 	await tap(KEY_C)
 	await press("CONVENE THE SÉANCE")
 	expect(session.view.phase == "seance", "circle advances phase")
+	await press("JOIN SÉANCE 1")
 	await press("Ask how he died")
 	expect(game.ui.modal == "transcript", "medium question opens private transcript")
 	expect(str(session.view.messages).contains("Bitter flowers"), "ghost response delivered")
@@ -162,6 +163,7 @@ func run() -> void:
 		await settle()
 		await press("BREAK THE CIRCLE" if session.view.phase == "seance" else "CONVENE THE SÉANCE")
 	expect(session.view.phase == "judgment", "three complete sittings lead to judgment")
+	await press("OPEN THE FINAL TESTAMENT")
 	await capture("judgment")
 	var picks = game.ui.overlay.find_children("*", "OptionButton", true, false)
 	if picks.size() == 3:

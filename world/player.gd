@@ -6,6 +6,8 @@ signal target_changed(id: String)
 
 var camera: Camera3D
 var lantern: SpotLight3D
+var spirit_glow: OmniLight3D
+var ghost = false
 var enabled = false
 var target_id = ""
 var move_clock = 0.0
@@ -40,6 +42,20 @@ func _ready() -> void:
 	lantern.spot_angle_attenuation = 0.55
 	lantern.visible = true
 	camera.add_child(lantern)
+	spirit_glow = OmniLight3D.new()
+	spirit_glow.name = "SpiritGlow"
+	spirit_glow.light_color = Color("86dccf")
+	spirit_glow.light_energy = 1.8
+	spirit_glow.omni_range = 7.5
+	spirit_glow.position.y = 1.4
+	spirit_glow.visible = false
+	add_child(spirit_glow)
+
+
+func configure_role(role: String) -> void:
+	ghost = role == "ghost"
+	lantern.visible = not ghost
+	spirit_glow.visible = ghost
 
 
 func set_control(value: bool) -> void:
@@ -66,22 +82,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotation.y -= event.relative.x * float(Session.settings.sensitivity)
 		pitch = clampf(pitch - event.relative.y * float(Session.settings.sensitivity), -1.25, 1.2)
 		camera.rotation.x = pitch
-	if event is InputEventKey and event.pressed and not event.echo:
-		if event.physical_keycode == KEY_E and target_id != "":
-			interacted.emit(target_id)
-		if event.physical_keycode == KEY_F:
-			lantern.visible = not lantern.visible
+	if event.is_action_pressed("game_interact") and target_id != "":
+		interacted.emit(target_id)
+	if event.is_action_pressed("game_lantern") and not ghost:
+		lantern.visible = not lantern.visible
 
 
 func _physics_process(delta: float) -> void:
 	if not enabled:
 		return
-	var input = Vector2(
-		float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)),
-		float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W))
-	)
-	input = input.normalized()
-	var speed = 5.3 if Input.is_physical_key_pressed(KEY_SHIFT) else 3.2
+	var input = Controls.stick()
+	var look = Controls.stick(true) * float(Session.settings.pad_sensitivity) * delta
+	if look.length_squared() > 0.00001:
+		rotation.y -= look.x
+		pitch = clampf(pitch - look.y, -1.25, 1.2)
+		camera.rotation.x = pitch
+	var speed = 5.3 if Input.is_action_pressed("game_sprint") else 3.2
 	var direction = transform.basis * Vector3(input.x, 0, input.y)
 	velocity.x = move_toward(velocity.x, direction.x * speed, delta * 20)
 	velocity.z = move_toward(velocity.z, direction.z * speed, delta * 20)
@@ -99,8 +115,9 @@ func _physics_process(delta: float) -> void:
 		foot_clock += delta
 		if foot_clock > (0.36 if speed > 4 else 0.5):
 			foot_clock = 0
-			Sound.play("step", -11)
-	var bob_amount = 0.022 if Session.settings.motion and moving else 0.0
+			if not ghost:
+				Sound.play("step", -11)
+	var bob_amount = 0.022 if Session.settings.motion and moving and not ghost else 0.0
 	camera.position.y = lerpf(camera.position.y, 1.65 + sin(bob) * bob_amount, delta * 12)
 	move_clock += delta
 	if move_clock >= 0.08:

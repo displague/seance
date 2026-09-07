@@ -14,6 +14,8 @@ var modal = ""
 var menu
 var journal
 var rituals
+var conversation
+var results
 var room_label: Label
 var phase_label: Label
 var time_label: Label
@@ -28,6 +30,8 @@ var last_log_signature = ""
 var selected_clue = ""
 var phase_seen = ""
 var close_button: Button
+var bottom_hint: Label
+var target_id = ""
 
 
 func _ready() -> void:
@@ -68,8 +72,12 @@ func _ready() -> void:
 	menu = SeanceMenu.new(self)
 	journal = SeanceJournal.new(self)
 	rituals = SeanceRituals.new(self)
+	conversation = NpcConversation.new(self)
+	results = SeanceResults.new(self)
 	menu.build()
 	_build_hud()
+	Controls.device_changed.connect(_controller_focus)
+	Controls.focus_first.call_deferred(menu_root)
 	Session.notice.connect(toast)
 	Session.lobby_changed.connect(menu.lobby)
 	Session.changed.connect(_sync)
@@ -84,6 +92,9 @@ func _ready() -> void:
 func dialog(
 	title: String, eyebrow: String = "ASHWOOD MANOR", kind: String = "dialog"
 ) -> VBoxContainer:
+	if kind != "talk":
+		SoloAi.cancel()
+		NpcSpeech.focus("")
 	UIK.clear(overlay)
 	modal = kind
 	overlay.show()
@@ -104,6 +115,7 @@ func dialog(
 	close_button = UIK.button("×  CLOSE", close)
 	close_button.custom_minimum_size = Vector2(118, 42)
 	top.add_child(close_button)
+	_focus_close.call_deferred()
 	outer.add_child(UIK.line())
 	var body = UIK.vbox(outer, 14)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -111,12 +123,25 @@ func dialog(
 
 
 func close() -> void:
+	if Session.active and Session.view.get("phase", "") == "ended":
+		if modal != "results":
+			results.summary()
+		return
+	SoloAi.cancel()
+	NpcSpeech.focus("")
 	if modal == "lobby" or modal == "connecting":
 		Session.leave()
 	modal = ""
 	overlay.hide()
 	UIK.clear(overlay)
+	if not Session.active:
+		Controls.focus_first.call_deferred(menu_root)
 	blocked.emit(not Session.active or Session.view.get("phase", "") == "ended")
+
+
+func _focus_close() -> void:
+	if modal != "" and is_instance_valid(close_button) and close_button.is_visible_in_tree():
+		close_button.grab_focus()
 
 
 func toast(text: String) -> void:
@@ -138,6 +163,7 @@ func show_menu() -> void:
 	screen_film.material.set_shader_parameter("ghost_view", 0.0)
 	blocked.emit(true)
 	return_to_menu.emit()
+	Controls.focus_first.call_deferred(menu_root)
 
 
 func _start() -> void:
@@ -191,13 +217,13 @@ func _build_hud() -> void:
 	feed_label.position = Vector2(42, 675)
 	feed_label.size = Vector2(340, 113)
 	hud_root.add_child(feed_label)
-	var bottom = UIK.label(
+	bottom_hint = UIK.label(
 		"W A S D  MOVE     E  INTERACT     J  JOURNAL     C  CIRCLE     T  TRANSCRIPT",
 		13,
 		UIK.MUTED
 	)
-	bottom.position = Vector2(42, 850)
-	hud_root.add_child(bottom)
+	bottom_hint.position = Vector2(42, 850)
+	hud_root.add_child(bottom_hint)
 	status_label = UIK.label("F  LANTERN    ESC  PAUSE", 13, UIK.GOLD)
 	status_label.position = Vector2(1175, 850)
 	hud_root.add_child(status_label)
@@ -208,14 +234,18 @@ func update_room(pos: Vector3) -> void:
 
 
 func set_target(id: String) -> void:
+	target_id = id
+	var key = "[ " + Controls.prompt("interact") + " ]  "
 	if id == "":
 		prompt_label.text = ""
+	elif id.begins_with("haunt:"):
+		prompt_label.text = key + "EXAMINE THE COLD SPOT"
 	elif id.begins_with("person:"):
-		prompt_label.text = "[ E ]  SPEAK TO\n" + CaseData.person(id.trim_prefix("person:")).name
+		prompt_label.text = key + "SPEAK TO\n" + CaseData.person(id.trim_prefix("person:")).name
 	else:
 		var data = CaseData.object_data(id)
 		prompt_label.text = (
-			"[ E ]  "
+			key
 			+ ("PREPARE" if CaseData.TASKS.has(id) else "INSPECT")
 			+ "\n"
 			+ str(data.get("name", ""))
@@ -227,10 +257,10 @@ func _sync() -> void:
 		return
 	var view = Session.view
 	var role = Session.local_role
-	var roman = ["I", "II", "III"][clampi(view.round - 1, 0, 2)]
-	phase_label.text = roman + "   ·   " + str(view.phase).to_upper()
+	phase_label.text = view.phase_info.label
 	var seconds = int(ceil(view.remaining))
-	time_label.text = "%02d:%02d" % [seconds / 60, seconds % 60]
+	time_label.text = "%02d:%02d\n%s" % [seconds / 60, seconds % 60, view.phase_info.countdown]
+	time_label.add_theme_font_size_override("font_size", 21)
 	role_label.text = CaseData.person(role).name.to_upper() + "  /  " + CaseData.person(role).title
 	objective_label.text = (
 		"YOUR PUBLIC OBJECTIVE\n"
@@ -259,15 +289,10 @@ func _sync() -> void:
 		phase_seen = view.phase
 		Sound.play("ritual", -4)
 		match view.phase:
-			"seance":
-				rituals.circle()
-			"judgment":
-				rituals.judgment()
+			"seance", "judgment", "investigation":
+				results.recap()
 			"ended":
 				rituals.results()
-			"investigation":
-				close()
-				toast("The circle breaks. A new investigation begins.")
 
 
 func _process(delta: float) -> void:
@@ -276,23 +301,61 @@ func _process(delta: float) -> void:
 		if toast_time <= 0:
 			toast_label.hide()
 	if Session.active:
-		if Voice.enabled:
+		if Session.view.phase == "ended":
+			bottom_hint.text = "CASE COMPLETE  ·  SELECT A GUEST TO REVIEW THEIR OBJECTIVES"
+			status_label.text = "FINAL SCORES & AWARDS"
+			return
+		status_label.text = (
+			"SPIRIT GLOW    ESC  PAUSE"
+			if Session.local_role == "ghost"
+			else "F  LANTERN    ESC  PAUSE"
+		)
+		bottom_hint.text = "W A S D  MOVE     E  INTERACT     J  JOURNAL     C  CIRCLE     T  TRANSCRIPT"
+		if Controls.using_pad:
+			bottom_hint.text = (
+				"LS MOVE   RS LOOK   %s INTERACT   %s JOURNAL   %s CIRCLE"
+				% [
+					Controls.prompt("interact"),
+					Controls.prompt("journal"),
+					Controls.prompt("circle")
+				]
+			)
+			status_label.text = "DPAD: ABILITIES    START: PAUSE"
+		if not Session.online and SoloAi.enabled:
 			mic_label.text = (
-				"● TRANSMITTING" if Voice.transmitting else "VOICE READY  ·  HOLD V TO SPEAK"
+				"SOLO MIC READY · TALK TO A GUEST"
+				if NpcSpeech.voice_in
+				else "SOLO MIC OFF · M TO ENABLE"
+			)
+			mic_label.modulate = UIK.TEAL if NpcSpeech.voice_in else UIK.MUTED
+		elif Voice.enabled:
+			mic_label.text = (
+				"● TRANSMITTING"
+				if Voice.transmitting
+				else "VOICE READY  ·  HOLD " + Controls.prompt("talk") + " TO SPEAK"
 			)
 			mic_label.modulate = UIK.TEAL
 		else:
 			mic_label.text = "MICROPHONE OFF  ·  M TO ENABLE"
+			if Controls.using_pad:
+				mic_label.text = "MIC OFF  ·  DPAD LEFT TO ENABLE"
 			mic_label.modulate = UIK.MUTED
 
 
+func _input(event: InputEvent) -> void:
+	# Start is also ui_accept in some default mappings. Reserve it for pause.
+	if event is InputEventJoypadButton and event.is_action_pressed("game_pause"):
+		_unhandled_input(event)
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo:
-		return
-	if event.physical_keycode == KEY_ESCAPE:
+	if event.is_action_pressed("game_pause") or event.is_action_pressed("ui_cancel"):
 		if modal != "":
 			if Session.active and Session.view.phase == "ended":
-				show_menu()
+				if modal == "results_detail":
+					results.summary()
+				else:
+					toast("The case is complete. Choose Leave Ashwood when you are ready.")
 			else:
 				close()
 		elif Session.active:
@@ -301,20 +364,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not Session.active or modal != "":
 		return
-	match event.physical_keycode:
-		KEY_J:
-			journal.open()
-		KEY_C:
-			rituals.circle()
-		KEY_G:
-			rituals.spirit()
-		KEY_T:
-			journal.transcript()
-		KEY_M:
-			Voice.set_enabled(not Voice.enabled)
-			toast(
-				"Microphone enabled. Hold V to speak." if Voice.enabled else "Microphone disabled."
+	if event.is_action_pressed("game_journal"):
+		journal.open()
+	elif event.is_action_pressed("game_circle"):
+		rituals.circle()
+	elif event.is_action_pressed("game_spirit"):
+		rituals.spirit()
+	elif event.is_action_pressed("game_transcript"):
+		journal.transcript()
+	elif event.is_action_pressed("game_microphone"):
+		if not Session.online and SoloAi.enabled:
+			NpcSpeech.set_voice_in(not NpcSpeech.voice_in)
+			toast(NpcSpeech.status)
+			return
+		Voice.set_enabled(not Voice.enabled)
+		toast(
+			(
+				"Microphone enabled. Hold " + Controls.prompt("talk") + " to speak."
+				if Voice.enabled
+				else "Microphone disabled."
 			)
+		)
+
+
+func _controller_focus() -> void:
+	set_target(target_id)
+	if Controls.using_pad and get_viewport().gui_get_focus_owner() == null:
+		Controls.focus_first(overlay if modal != "" else menu_root)
 
 
 func pause_menu() -> void:

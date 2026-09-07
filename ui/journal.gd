@@ -5,10 +5,12 @@ var ui
 var transcript_box: VBoxContainer
 var transcript_input: LineEdit
 var last_message_signature = ""
+var pending_collect = ""
 
 
 func _init(owner_ui) -> void:
 	ui = owner_ui
+	Session.command_finished.connect(_command_finished)
 
 
 func _tabs(body: VBoxContainer, selected: String) -> void:
@@ -128,6 +130,31 @@ func open() -> void:
 
 
 func inspect(id: String, in_world: bool = false) -> void:
+	if id.begins_with("haunt:"):
+		var room = id.trim_prefix("haunt:")
+		var body = ui.dialog("The house is weeping", room.to_upper(), "cold_spot")
+		(
+			body
+			. add_child(
+				(
+					UIK
+					. paragraph(
+						"A cold spot has smothered the lamps. It is a sign, not proof of guilt. A living guest in this room can steady the lamps; the cold also fades on its own.",
+						24
+					)
+				)
+			)
+		)
+		body.add_child(
+			UIK.button(
+				"Steady the lamps",
+				func():
+					Session.command("calm", {"target": room})
+					ui.close(),
+				true
+			)
+		)
+		return
 	if CaseData.TASKS.has(id):
 		ui.rituals.task(id)
 		return
@@ -192,9 +219,21 @@ func inspect(id: String, in_world: bool = false) -> void:
 
 
 func _evidence_action(action: String, id: String) -> void:
+	if action == "collect":
+		pending_collect = id
 	Session.command(action, {"id": id})
-	Sound.play("clue", -5)
-	ui.close()
+	if action != "collect":
+		ui.close()
+
+
+func _command_finished(action: String, payload: Dictionary, error: String) -> void:
+	if action != "collect" or str(payload.get("id", "")) != pending_collect:
+		return
+	var id = pending_collect
+	pending_collect = ""
+	if error == "" and ui.modal in ["clue", "item"]:
+		Sound.play("clue", -5)
+		inspect(id)
 
 
 func confirm_destroy(id: String) -> void:
@@ -313,6 +352,9 @@ func people() -> void:
 		if role == Session.local_role:
 			continue
 		var row = UIK.hbox(UIK.panel(list, UIK.INK, Color("3a493f"), 14))
+		AvatarPortrait.add(
+			row, role, Session.view.get("appearances", {}).get(role, {}), Vector2(112, 112)
+		)
 		var text = UIK.vbox(row, 3)
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text.add_child(UIK.label(CaseData.person(role).name, 26, UIK.GOLD, true))
@@ -334,43 +376,7 @@ func people() -> void:
 
 
 func talk(role: String) -> void:
-	if role == "ghost":
-		ui.rituals.circle()
-		return
-	var body = ui.dialog(CaseData.person(role).name, CaseData.person(role).title.to_upper(), "talk")
-	if Session.view.humans.has(role):
-		(
-			body
-			. add_child(
-				(
-					UIK
-					. paragraph(
-						"This guest is another player. Use voice or the transcript to speak to them. They alone decide what they tell you.",
-						26,
-						UIK.CREAM
-					)
-				)
-			)
-		)
-		body.add_child(UIK.button("Open transcript", transcript, true))
-		return
-	var lines = UIK.scroll(body)
-	for message in Session.view.messages:
-		if str(message).begins_with(CaseData.person(role).name + ":"):
-			lines.add_child(UIK.paragraph(message, 23, UIK.CREAM))
-	if lines.get_child_count() == 0:
-		lines.add_child(
-			UIK.paragraph(
-				"They turn toward you. A question can be an accusation, if you ask it carefully.",
-				25
-			)
-		)
-	var buttons = UIK.hbox(body)
-	for topic in ["death", "inheritance", "ritual"]:
-		var button = UIK.button("Ask about the " + topic, _ask.bind(role, topic))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		buttons.add_child(button)
-	body.add_child(UIK.button("Read your transcript", transcript, true))
+	ui.conversation.open(role)
 
 
 func estate() -> void:

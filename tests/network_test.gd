@@ -13,10 +13,15 @@ var barrier: Node
 class PhaseBarrier:
 	extends Node
 	var reports: Dictionary = {}
+	var current = 0
 
 	@rpc("any_peer", "call_remote", "reliable", 0)
 	func complete(stage_number: int) -> void:
 		reports[multiplayer.get_remote_sender_id()] = stage_number
+
+	@rpc("authority", "call_remote", "reliable", 0)
+	func begin(stage_number: int) -> void:
+		current = stage_number
 
 
 func _initialize() -> void:
@@ -51,15 +56,25 @@ func send_pcm() -> void:
 	# Very quiet generated tone; no audio input stream is started.
 	for i in range(480):
 		packet.encode_s16(i * 2, int(sin(i * TAU * 220 / 16000.0) * 100))
-	for i in range(4):
+	# A 1.2-second utterance at the real 30-ms PCM cadence. ENet may discard a
+	# tiny burst while its adaptive throttle recovers from local scheduling jitter.
+	# Keep the real unreliable channel and assert both delivery and confidentiality.
+	for i in range(40):
 		voice.rpc_id(1, "_upload", packet)
-		await create_timer(0.05).timeout
+		await create_timer(0.03).timeout
 
 
 func stage(number: int) -> void:
 	voice.stop()
 	barrier.reports.clear()
 	session.command("chat", {"text": "TEST_STAGE " + str(number)})
+	# Both receivers clear the preceding stage before any sender uploads PCM.
+	# These barriers do not change voice transport or bypass listening rules.
+	expect(
+		await until(func(): return barrier.reports.values().count(-number) == 2),
+		"both clients ready for stage " + str(number)
+	)
+	barrier.begin.rpc(number)
 	expect(
 		await until(func(): return barrier.reports.values().count(number) == 2),
 		"both clients completed stage " + str(number)
@@ -89,6 +104,7 @@ func run() -> void:
 
 
 func host_case() -> void:
+	root.get_node("Wardrobe").choices.medium = {"outfit": "heritage", "brooch": "silver"}
 	expect(session.host("medium", "QA host") == OK, "host binds port")
 	if not await until(func(): return session.lobby.size() == 3):
 		expect(false, "two clients registered")
@@ -98,8 +114,17 @@ func host_case() -> void:
 		roles.append(guest.role)
 	expect(roles.has("ghost") and roles.has("heir"), "roles assigned uniquely")
 	session.start_host_game()
+	expect(session.view.appearances.medium.outfit == "heritage", "host equipped model retained")
+	expect(
+		session.view.appearances.heir.brooch == "silver", "assigned role uses its saved appearance"
+	)
 	await create_timer(0.5).timeout
 	await stage(1)
+	expect(
+		session.view.haunt.kind == "weep" and session.view.haunt.room == "Library",
+		"host receives ghost room event"
+	)
+	session.rules.state.energy = 100.0  # Independent voice/possession cases below.
 	expect(not heard("secret_investigation"), "ghost text withheld outside sitting")
 	expect(not received_voice("ghost"), "ghost audio withheld outside sitting")
 	session.advance()
@@ -150,13 +175,26 @@ func host_case() -> void:
 
 
 func client_case(role: String) -> void:
+	var wardrobe = root.get_node("Wardrobe")
+	wardrobe.choices.heir = {"outfit": "../../invalid", "brooch": "silver", "speed": 100}
+	wardrobe.choices.medium = {"outfit": "heritage", "brooch": "none"}
 	var args = OS.get_cmdline_user_args()
 	var address = args[1] if args.size() > 1 else "127.0.0.1"
-	expect(session.join_room(address, role, "QA " + role) == OK, "join initiated")
+	var wanted = "medium" if role == "heir" else role
+	expect(session.join_room(address, wanted, "QA " + role) == OK, "join initiated")
 	if not await until(func(): return session.active):
 		expect(false, "received start snapshot")
 		return
 	expect(session.local_role == role, "requested role received")
+	expect(
+		session.view.appearances.heir == {"outfit": "ashwood", "brooch": "silver"},
+		"only sanitized assigned-role cosmetics replicated"
+	)
+	expect(
+		session.view.appearances.medium.outfit == "heritage",
+		"other player's equipped model replicated"
+	)
+	expect(not session.view.has("remembrance"), "account progression not in game snapshot")
 	expect(session.view.humans.size() == 3, "human roster replicated")
 	expect(not session.view.has("private_log"), "no complete private logs in snapshot")
 	var origin: Vector3 = session.view.positions[role]
@@ -171,6 +209,10 @@ func client_case(role: String) -> void:
 			expect(false, "stage received " + str(number))
 			return
 		voice.stop()
+		barrier.complete.rpc_id(1, -number)
+		if not await until(func(): return barrier.current == number):
+			expect(false, "stage start barrier " + str(number))
+			return
 		if number == 1:
 			var server_peer = session.multiplayer.multiplayer_peer.get_peer(1)
 			expect(
@@ -205,6 +247,12 @@ func client_case(role: String) -> void:
 
 
 func ghost_stage(number: int) -> void:
+	if number == 1:
+		session.command("weep", {"target": "Library"})
+		expect(
+			await until(func(): return session.view.haunt.kind == "weep"),
+			"ghost sees accepted cold spot"
+		)
 	if number == 3:
 		session.command("possess", {"target": "heir"})
 	if number == 4:
@@ -223,12 +271,16 @@ func guest_stage(number: int) -> void:
 	if number == 2:
 		session.command("manifest", {"word": "YES", "role": "ghost"})
 	if number == 4:
-		await create_timer(0.25).timeout
+		expect(
+			await until(func(): return session.view.get("silenced", "") == "heir"),
+			"silence permission replicated before PCM upload"
+		)
 		session.command("chat", {"text": "secret_silenced"})
 		await send_pcm()
 	await create_timer(0.3).timeout
 	match number:
 		1:
+			expect(session.view.haunt.kind == "weep", "living guest sees public haunting")
 			expect(not heard("secret_investigation"), "guest cannot read ghost outside sitting")
 			expect(not received_voice("ghost"), "guest cannot hear ghost outside sitting")
 		2:

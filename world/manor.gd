@@ -7,6 +7,8 @@ var spirit_light: OmniLight3D
 var time = 0.0
 var environment: Environment
 var dust: GPUParticles3D
+var moon: DirectionalLight3D
+var atmosphere: ManorAtmosphere
 
 
 func _ready() -> void:
@@ -19,6 +21,7 @@ func _ready() -> void:
 	_build_chapel()
 	_build_objects()
 	_build_dust()
+	atmosphere = ManorAtmosphere.new(self)
 
 
 func _build_environment() -> void:
@@ -37,7 +40,7 @@ func _build_environment() -> void:
 	environment.fog_density = 0.012
 	world.environment = environment
 	add_child(world)
-	var moon = DirectionalLight3D.new()
+	moon = DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-32, -35, 0)
 	moon.light_color = Color("8cbbd1")
 	moon.light_energy = 0.65
@@ -533,6 +536,7 @@ func _process(delta: float) -> void:
 	time += delta
 	var haunted = Session.active and Session.view.get("phase", "") in ["seance", "judgment"]
 	props.tick(time, haunted)
+	atmosphere.tick(delta, Session.view)
 	spirit_light.light_energy = lerpf(
 		spirit_light.light_energy, 3.4 if haunted else 0.15, delta * 1.5
 	)

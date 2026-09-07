@@ -7,6 +7,7 @@ const RATE = 16000
 const FRAMES = 480
 var enabled = false
 var transmitting = false
+var receiving_until = 0
 var level = 0.0
 var microphone: AudioStreamPlayer
 var capture: AudioEffectCapture
@@ -70,7 +71,7 @@ func stop() -> void:
 func _process(_delta: float) -> void:
 	if not enabled:
 		return
-	transmitting = Input.is_physical_key_pressed(KEY_V) and Session.online and Session.active
+	transmitting = Input.is_action_pressed("game_talk") and Session.online and Session.active
 	var focused = get_viewport().gui_get_focus_owner()
 	if focused is LineEdit or focused is TextEdit or not get_window().has_focus():
 		transmitting = false
@@ -130,6 +131,7 @@ func _deliver(role: String, packet: PackedByteArray) -> void:
 
 
 func _play(role: String, packet: PackedByteArray) -> void:
+	receiving_until = Time.get_ticks_msec() + 450
 	if not speakers.has(role):
 		var output = AudioStreamPlayer.new()
 		var stream = AudioStreamGenerator.new()

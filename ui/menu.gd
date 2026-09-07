@@ -48,6 +48,7 @@ func build() -> void:
 	)
 	column.add_child(UIK.spacer(22))
 	column.add_child(UIK.button("ENTER ASHWOOD     →", func(): choose_role("solo"), true))
+	column.add_child(UIK.button("Solo with local AI…", func(): SoloAiMenu.show(ui)))
 	column.add_child(UIK.spacer(3))
 	column.add_child(UIK.button("Host a private circle", func(): choose_role("host")))
 	column.add_child(UIK.button("Join a circle", func(): choose_role("join")))
@@ -59,7 +60,6 @@ func build() -> void:
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	extras.add_child(settings)
 	column.add_child(UIK.spacer(10))
-	column.add_child(UIK.label("SOLO REHEARSAL  /  PRIVATE MULTIPLAYER", 12, UIK.MUTED))
 	var location = UIK.vbox(ui.menu_root, 5)
 	location.position = Vector2(1240, 65)
 	location.add_child(UIK.label("ASHWOOD MANOR", 16, UIK.GOLD))
@@ -71,7 +71,7 @@ func build() -> void:
 	var version = UIK.label("PROTOTYPE 0.1     •     HEADPHONES RECOMMENDED", 12, UIK.MUTED)
 	version.position = Vector2(105, 859)
 	ui.menu_root.add_child(version)
-	var quit = UIK.button("Quit", func(): ui.get_tree().quit())
+	var quit = UIK.button("Quit", Sound.request_quit)
 	quit.position = Vector2(1420, 830)
 	quit.size = Vector2(90, 42)
 	ui.menu_root.add_child(quit)
@@ -93,6 +93,11 @@ func choose_role(mode: String) -> void:
 		)
 	)
 	var grid = GridContainer.new()
+	var wardrobe = UIK.button(
+		"WARDROBE · customize your selected character",
+		func(): WardrobeMenu.show(ui, chosen, func(): choose_role(mode))
+	)
+	body.add_child(wardrobe)
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 15)
 	grid.add_theme_constant_override("v_separation", 15)
@@ -102,7 +107,7 @@ func choose_role(mode: String) -> void:
 	for role in CaseData.ROLES:
 		var data = CaseData.person(role)
 		var card = UIK.button("", func(): _select(role))
-		card.custom_minimum_size = Vector2(385, 185)
+		card.custom_minimum_size = Vector2(385, 160)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column = UIK.vbox(card, 8)
 		column.position = Vector2(22, 16)
@@ -114,7 +119,7 @@ func choose_role(mode: String) -> void:
 		grid.add_child(card)
 		role_buttons[role] = card
 	_select(chosen)
-	if mode != "solo":
+	if mode in ["host", "join"]:
 		var inputs = UIK.hbox(body)
 		name_input = LineEdit.new()
 		name_input.placeholder_text = "Your name"
@@ -148,24 +153,26 @@ func choose_role(mode: String) -> void:
 				(
 					UIK
 					. paragraph(
-						"A complete solo rehearsal with five scripted guests. No microphone required. An authored case; their loyalties will not change, but your choices can.",
+						(
+							"Local AI conversation with five goal-driven guests who investigate and compete for objects. Type or enable optional local speech. Authored social actions remain available."
+							if mode == "ai"
+							else "A solo rehearsal with five authored guests. Explore, show evidence, request disclosures, and bargain. No microphone or language model required."
+						),
 						16
 					)
 				)
 			)
 		)
 	body.add_child(
-		(
-			UIK
-			. button(
-				{
-					"solo": "BEGIN THE REHEARSAL",
-					"host": "OPEN THE CIRCLE",
-					"join": "JOIN THE CIRCLE"
-				}[mode],
-				_enter,
-				true
-			)
+		UIK.button(
+			{
+				"solo": "BEGIN THE REHEARSAL",
+				"ai": "BEGIN WITH LOCAL AI",
+				"host": "OPEN THE CIRCLE",
+				"join": "JOIN THE CIRCLE"
+			}[mode],
+			_enter,
+			true
 		)
 	)
 
@@ -184,9 +191,9 @@ func _select(role: String) -> void:
 
 
 func _enter() -> void:
-	if room_mode == "solo":
+	if room_mode in ["solo", "ai"]:
 		ui.close()
-		Session.solo(chosen)
+		Session.solo(chosen, room_mode == "ai")
 	elif room_mode == "host":
 		var error = Session.host(chosen, name_input.text)
 		if error != OK:
@@ -268,7 +275,7 @@ func instructions() -> void:
 		],
 		[
 			"Voice and transcripts",
-			"M enables or disables the microphone. Hold V to speak while enabled. T opens a text transcript with the same listening rules. No audio is recorded. In solo, conversations are authored dialogue, not live AI. Escape releases the mouse and opens the pause menu."
+			"Online: M enables the microphone; hold V / LB to speak. Solo: authored social actions work offline; choose Solo with local AI for free conversation and optional local voices. Voice-in is opt-in and transcripts require Send. T opens your transcript. Escape opens the pause menu."
 		]
 	]
 	for entry in instructions_list:
@@ -279,63 +286,7 @@ func instructions() -> void:
 
 
 func options() -> void:
-	var body = ui.dialog("Make yourself comfortable", "SETTINGS", "settings")
-	body.add_child(UIK.label("Master volume", 23, UIK.GOLD, true))
-	var volume = HSlider.new()
-	volume.min_value = 0
-	volume.max_value = 1
-	volume.step = 0.01
-	volume.value = Session.settings.volume
-	volume.custom_minimum_size.y = 38
-	volume.value_changed.connect(
-		func(value):
-			Session.settings.volume = value
-			AudioServer.set_bus_volume_db(0, linear_to_db(value))
-	)
-	body.add_child(volume)
-	body.add_child(UIK.label("Mouse sensitivity", 23, UIK.GOLD, true))
-	var sensitivity = HSlider.new()
-	sensitivity.min_value = 0.0008
-	sensitivity.max_value = 0.005
-	sensitivity.step = 0.0001
-	sensitivity.value = Session.settings.sensitivity
-	sensitivity.custom_minimum_size.y = 38
-	sensitivity.value_changed.connect(func(value): Session.settings.sensitivity = value)
-	body.add_child(sensitivity)
-	var fullscreen = CheckButton.new()
-	fullscreen.text = "Fullscreen"
-	fullscreen.button_pressed = Session.settings.fullscreen
-	fullscreen.toggled.connect(
-		func(value):
-			Session.settings.fullscreen = value
-			DisplayServer.window_set_mode(
-				(
-					DisplayServer.WINDOW_MODE_FULLSCREEN
-					if value
-					else DisplayServer.WINDOW_MODE_WINDOWED
-				)
-			)
-	)
-	body.add_child(fullscreen)
-	var motion = CheckButton.new()
-	motion.text = "Camera movement and head bob"
-	motion.button_pressed = Session.settings.motion
-	motion.toggled.connect(func(value): Session.settings.motion = value)
-	body.add_child(motion)
-	body.add_child(UIK.spacer(15))
-	(
-		body
-		. add_child(
-			(
-				UIK
-				. paragraph(
-					"Microphone access is opt-in for every session. No speech is saved or sent to a cloud service. Local volume affects all sound, including other players.",
-					18
-				)
-			)
-		)
-	)
-	body.add_child(UIK.button("Save settings", _save_options, true))
+	SeanceSettings.show(ui)
 
 
 func _cancel_connection() -> void:
